@@ -65,6 +65,7 @@ const Login = () => {
       localStorage.setItem('userId', user.id); // Store user ID
       localStorage.setItem('phoneNumber', user.phone_number); // Store phone number
       localStorage.setItem('photo', user.photo || ''); // Store photo (fallback to empty string)
+      localStorage.setItem('balance', user.balance); // Store balance
 
       // Navigate to dashboard
       navigate('/profile');
@@ -155,8 +156,8 @@ const Login = () => {
             >
               {loading ? (
                 <>
-                  <CircularProgress size={20} sx={{ color: '#fff', marginRight: 1 }} />
-                  Please wait...we are verifying your credentials
+                  <CircularProgress size={16} sx={{ color: '#fff', marginRight: 1 }} />
+                  Please wait...verifying your credentials
                 </>
               ) : (
                 'Login'

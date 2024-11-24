@@ -69,7 +69,7 @@ const Login = () => {
       // Navigate to dashboard
       navigate('/profile');
     } catch (err) {
-      setError('Login failed. Please check your email and password.');
+      setError('Login failed. Please input correct email or password.');
     } finally {
       setLoading(false); // Set loading state to false
     }
@@ -89,7 +89,7 @@ const Login = () => {
         {/* Logo */}
         <Box sx={{ marginBottom: 4 }}>
           <img
-            src={`${process.env.REACT_APP_API_URL}/user/uploads/logo.png`}
+            src="/logo.png" // Access logo.png directly from the public folder
             alt="Logo"
             style={{ width: '100px', height: '100px' }}
           />
@@ -156,7 +156,7 @@ const Login = () => {
               {loading ? (
                 <>
                   <CircularProgress size={20} sx={{ color: '#fff', marginRight: 1 }} />
-                  Please wait...
+                  Please wait...we are verifying your credentials
                 </>
               ) : (
                 'Login'

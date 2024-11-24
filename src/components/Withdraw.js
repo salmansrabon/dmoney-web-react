@@ -125,7 +125,8 @@ const Withdraw = () => {
             sx={{ height: 50, fontSize: 16 }}
           >
             {loading ? (
-              <CircularProgress size={24} sx={{ color: "#fff" }} />
+                <><CircularProgress size={24} sx={{ color: "#fff" }} />
+              Transacction is processing...</>
             ) : (
               "Withdraw"
             )}

@@ -80,6 +80,17 @@ const App = () => {
           <Route path="send-money" element={<SendMoney />} />
           <Route path="cash-out" element={<Withdraw />} />
         </Route>
+        <Route
+          path="/merchant"
+          element={
+            <PrivateRoute>
+              <AdminDashboard />
+            </PrivateRoute>
+          }
+        >
+          <Route path="self-statement" element={<SelfStatement />} />
+          <Route path="cash-out" element={<Withdraw />} />
+        </Route>
       </Routes>
     </Router>
   );

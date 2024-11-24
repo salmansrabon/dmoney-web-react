@@ -9,11 +9,12 @@ import {
   Box,
   TextField,
   Button,
-  TablePagination,
   CircularProgress,
+  Paper,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import Pagination from './Pagination'; // Reuse the existing Pagination component
 
 const UserList = () => {
   const [originalUsers, setOriginalUsers] = useState([]);
@@ -21,7 +22,7 @@ const UserList = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [regFrom, setRegFrom] = useState('');
   const [regTo, setRegTo] = useState('');
-  const [page, setPage] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -35,8 +36,10 @@ const UserList = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        // Sort the users in descending order by registration date or any other property
-        const sortedUsers = response.data.users.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        // Sort the users in descending order by registration date
+        const sortedUsers = response.data.users.sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        );
 
         setOriginalUsers(sortedUsers); // Store sorted data in the original list
         setFilteredUsers(sortedUsers); // Also update the filtered list
@@ -74,17 +77,11 @@ const UserList = () => {
     });
 
     setFilteredUsers(filtered);
-    setPage(0);
+    setCurrentPage(1); // Reset to the first page
   };
 
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const currentUsers = filteredUsers.slice(startIndex, startIndex + rowsPerPage);
 
   const handleViewProfile = (id) => {
     navigate(`/admin/user-profile/${id}`);
@@ -143,22 +140,21 @@ const UserList = () => {
           Search
         </Button>
       </Box>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Id</TableCell>
-            <TableCell>Name</TableCell>
-            <TableCell>Email</TableCell>
-            <TableCell>Phone Number</TableCell>
-            <TableCell>Role</TableCell>
-            <TableCell>Registration Date</TableCell>
-            <TableCell>View</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {filteredUsers
-            .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-            .map((user) => (
+      <Paper elevation={3}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell><strong>Id</strong></TableCell>
+              <TableCell><strong>Name</strong></TableCell>
+              <TableCell><strong>Email</strong></TableCell>
+              <TableCell><strong>Phone Number</strong></TableCell>
+              <TableCell><strong>Role</strong></TableCell>
+              <TableCell><strong>Registration Date</strong></TableCell>
+              <TableCell><strong>View</strong></TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {currentUsers.map((user) => (
               <TableRow key={user.id}>
                 <TableCell>{user.id}</TableCell>
                 <TableCell>{user.name}</TableCell>
@@ -173,16 +169,18 @@ const UserList = () => {
                 </TableCell>
               </TableRow>
             ))}
-        </TableBody>
-      </Table>
-      <TablePagination
-        component="div"
-        count={filteredUsers.length}
-        page={page}
-        onPageChange={handleChangePage}
+          </TableBody>
+        </Table>
+      </Paper>
+      <Pagination
+        total={filteredUsers.length}
         rowsPerPage={rowsPerPage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-        rowsPerPageOptions={[10, 50, 100]}
+        currentPage={currentPage}
+        onPageChange={(page) => setCurrentPage(page)}
+        onRowsPerPageChange={(rows) => {
+          setRowsPerPage(rows);
+          setCurrentPage(1);
+        }}
       />
     </Box>
   );

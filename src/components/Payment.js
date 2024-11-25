@@ -17,35 +17,37 @@ const Payment = () => {
   });
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState(null);
-  const [errorMessage, setErrorMessage] = useState(""); // For handling API errors
+  const [errorMessage, setErrorMessage] = useState("");
+  const [currentBalance, setCurrentBalance] = useState(null);
 
   useEffect(() => {
-    // Retrieve the logged-in user's phone number from localStorage
+    // Retrieve the logged-in user's phone number and balance from localStorage
     const phoneNumber = localStorage.getItem("phoneNumber");
+    const balance = localStorage.getItem("balance");
 
-    // Set the from_account field in formData
     if (phoneNumber) {
       setFormData((prevData) => ({
         ...prevData,
         from_account: phoneNumber, // Set from_account from localStorage
       }));
     }
+
+    if (balance) {
+      setCurrentBalance(parseFloat(balance)); // Set balance from localStorage
+    }
   }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Confirmation Alert
     const isConfirmed = window.confirm(
       "Are you sure you want to proceed with the payment?"
     );
-    if (!isConfirmed) {
-      return;
-    }
+    if (!isConfirmed) return;
 
     setLoading(true);
-    setErrorMessage(""); // Clear any previous error messages
-    setResponse(null); // Clear previous response data
+    setErrorMessage("");
+    setResponse(null);
     const token = localStorage.getItem("token");
 
     try {
@@ -59,16 +61,19 @@ const Payment = () => {
           },
         }
       );
+
       setResponse(res.data);
+
+      if (res.data.currentBalance !== undefined) {
+        const updatedBalance = res.data.currentBalance;
+        setCurrentBalance(updatedBalance); // Update UI balance
+        localStorage.setItem("balance", updatedBalance); // Update localStorage
+      }
     } catch (error) {
       console.error("Error processing payment:", error);
-
-      // Handle error messages returned from the API
-      if (error.response && error.response.data && error.response.data.message) {
-        setErrorMessage(error.response.data.message); // Show the error message from the API
-      } else {
-        setErrorMessage("Payment failed. Please try again."); // Default error message
-      }
+      setErrorMessage(
+        error.response?.data?.message || "Payment failed. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -83,8 +88,27 @@ const Payment = () => {
         minHeight: "100vh",
         backgroundColor: "#f7f7f7",
         padding: 2,
+        position: "relative",
       }}
     >
+      {/* Current Balance Display */}
+      <Box
+        sx={{
+          position: "absolute",
+          top: 20,
+          left: 20,
+          backgroundColor: "#fff",
+          padding: "10px 20px",
+          borderRadius: "8px",
+          boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+        }}
+      >
+        <Typography variant="body1" sx={{ fontWeight: "bold" }}>
+          Current Balance:{" "}
+          {currentBalance !== null ? currentBalance.toFixed(2) : "Loading..."}
+        </Typography>
+      </Box>
+
       <Paper
         elevation={3}
         sx={{
@@ -99,7 +123,6 @@ const Payment = () => {
           Make a Payment
         </Typography>
         <form onSubmit={handleSubmit}>
-          {/* To Account */}
           <TextField
             label="To Account"
             fullWidth
@@ -111,7 +134,6 @@ const Payment = () => {
             sx={{ mb: 2 }}
           />
 
-          {/* Amount */}
           <TextField
             label="Amount"
             type="number"
@@ -127,7 +149,6 @@ const Payment = () => {
             sx={{ mb: 2 }}
           />
 
-          {/* Submit Button */}
           <Button
             type="submit"
             variant="contained"
@@ -138,32 +159,34 @@ const Payment = () => {
           >
             {loading ? (
               <>
-              <CircularProgress size={24} sx={{ color: "#fff" }} />
-              Transacction is processing...
+                <CircularProgress size={24} sx={{ color: "#fff", mr: 1 }} />
+                Transaction is processing...
               </>
-              
             ) : (
               "Make Payment"
             )}
           </Button>
         </form>
 
-        {/* Error Section */}
         {errorMessage && (
           <Typography variant="body1" color="error" sx={{ mt: 2 }}>
             {errorMessage}
           </Typography>
         )}
 
-        {/* Response Section */}
         {response && (
           <Box sx={{ mt: 3, textAlign: "left" }}>
-            <Typography variant="h6" color="success.main">
+            <Typography
+              variant="h6"
+              sx={{
+                color: response.message.toLowerCase().includes("successful")
+                  ? "success.main"
+                  : "error.main",
+              }}
+            >
               {response.message || "Payment successful"}
             </Typography>
-            <Typography>
-              Transaction ID: {response.trnxId || "N/A"}
-            </Typography>
+            <Typography>Transaction ID: {response.trnxId || "N/A"}</Typography>
             <Typography>
               Fee: {response.fee ? response.fee.toFixed(2) : "N/A"}
             </Typography>

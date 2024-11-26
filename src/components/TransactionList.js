@@ -8,24 +8,25 @@ import {
   TableBody,
   Typography,
   CircularProgress,
-  TablePagination,
+  Paper,
 } from "@mui/material";
 import axios from "axios";
+import Pagination from "./Pagination"; // Your existing Pagination component
 
 const TransactionList = () => {
   const [transactions, setTransactions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(0); // Page number (zero-based)
+  const [currentPage, setCurrentPage] = useState(1); // Page number (one-based)
   const [rowsPerPage, setRowsPerPage] = useState(50); // Default limit per page
   const [totalCount, setTotalCount] = useState(0); // Total number of transactions
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch transactions when page or rowsPerPage changes
     const fetchTransactions = async () => {
       const token = localStorage.getItem("token");
       setLoading(true);
 
       try {
+        // Remove hardcoded limit and use dynamic params
         const response = await axios.get(
           `${process.env.REACT_APP_API_URL}/transaction/list`,
           {
@@ -35,32 +36,22 @@ const TransactionList = () => {
             },
             params: {
               limit: rowsPerPage,
-              offset: page * rowsPerPage, // Calculate the offset for the current page
+              offset: (currentPage - 1) * rowsPerPage,
             },
           }
         );
 
-        setTransactions(response.data.transactions); // Update transaction list
-        setTotalCount(response.data.count); // Update the total count of transactions
+        setTransactions(response.data.transactions);
+        setTotalCount(response.data.count); // Ensure the backend returns total count
       } catch (error) {
-        console.error("Error fetching transaction list:", error);
+        console.error("Error fetching transactions:", error);
       } finally {
         setLoading(false);
       }
     };
 
     fetchTransactions();
-  }, [page, rowsPerPage]);
-
-  // Handle pagination changes
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage); // Update the page number
-  };
-
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10)); // Update the rows per page
-    setPage(0); // Reset to the first page
-  };
+  }, [currentPage, rowsPerPage]);
 
   if (loading) {
     return (
@@ -91,58 +82,54 @@ const TransactionList = () => {
       }}
     >
       <Typography variant="h4" sx={{ mb: 4 }}>
-        Transaction List
+        Transaction List ({totalCount})
       </Typography>
 
-      <Table
-        sx={{
-          border: "1px solid #ddd",
-          borderRadius: "5px",
-          overflow: "hidden",
-          boxShadow: "0px 2px 8px rgba(0,0,0,0.1)",
-        }}
-      >
-        <TableHead>
-          <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-            <TableCell><strong>ID</strong></TableCell>
-            <TableCell><strong>Account</strong></TableCell>
-            <TableCell><strong>From Account</strong></TableCell>
-            <TableCell><strong>To Account</strong></TableCell>
-            <TableCell><strong>Description</strong></TableCell>
-            <TableCell><strong>Transaction ID</strong></TableCell>
-            <TableCell><strong>Debit</strong></TableCell>
-            <TableCell><strong>Credit</strong></TableCell>
-            <TableCell><strong>Created At</strong></TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {transactions.map((transaction) => (
-            <TableRow key={transaction.id}>
-              <TableCell>{transaction.id}</TableCell>
-              <TableCell>{transaction.account}</TableCell>
-              <TableCell>{transaction.from_account}</TableCell>
-              <TableCell>{transaction.to_account}</TableCell>
-              <TableCell>{transaction.description}</TableCell>
-              <TableCell>{transaction.trnxId}</TableCell>
-              <TableCell>{transaction.debit}</TableCell>
-              <TableCell>{transaction.credit}</TableCell>
-              <TableCell>
-                {new Date(transaction.createdAt).toLocaleString()}
-              </TableCell>
+      <Paper elevation={3}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell><strong>ID</strong></TableCell>
+              <TableCell><strong>Account</strong></TableCell>
+              <TableCell><strong>From Account</strong></TableCell>
+              <TableCell><strong>To Account</strong></TableCell>
+              <TableCell><strong>Description</strong></TableCell>
+              <TableCell><strong>Transaction ID</strong></TableCell>
+              <TableCell><strong>Debit</strong></TableCell>
+              <TableCell><strong>Credit</strong></TableCell>
+              <TableCell><strong>Created At</strong></TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHead>
+          <TableBody>
+            {transactions.map((transaction) => (
+              <TableRow key={transaction.id}>
+                <TableCell>{transaction.id}</TableCell>
+                <TableCell>{transaction.account}</TableCell>
+                <TableCell>{transaction.from_account}</TableCell>
+                <TableCell>{transaction.to_account}</TableCell>
+                <TableCell>{transaction.description}</TableCell>
+                <TableCell>{transaction.trnxId}</TableCell>
+                <TableCell>{transaction.debit?.toFixed(2)}</TableCell>
+                <TableCell>{transaction.credit?.toFixed(2)}</TableCell>
+                <TableCell>
+                  {new Date(transaction.createdAt).toLocaleString()}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Paper>
 
-      {/* Pagination */}
-      <TablePagination
-        component="div"
-        count={totalCount} // Total number of transactions
-        page={page}
-        onPageChange={handleChangePage}
+      {/* Pagination Component */}
+      <Pagination
+        total={totalCount}
         rowsPerPage={rowsPerPage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-        rowsPerPageOptions={[10, 25, 50, 100]}
+        currentPage={currentPage}
+        onPageChange={(page) => setCurrentPage(page)}
+        onRowsPerPageChange={(rows) => {
+          setRowsPerPage(rows);
+          setCurrentPage(1); // Reset to first page when rows per page changes
+        }}
       />
     </Box>
   );

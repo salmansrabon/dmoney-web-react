@@ -4,8 +4,6 @@ import { useNavigate } from "react-router-dom";
 import {
   Box,
   Button,
-  Container,
-  CssBaseline,
   TextField,
   Typography,
   MenuItem,
@@ -13,7 +11,6 @@ import {
   InputLabel,
   FormControl,
   Card,
-  CardContent,
 } from "@mui/material";
 
 const CreateUser = () => {

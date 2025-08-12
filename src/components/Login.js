@@ -70,7 +70,16 @@ const Login = () => {
       // Navigate to dashboard
       navigate('/profile');
     } catch (err) {
-      setError('Login failed. Please input correct email or password.');
+      if (
+        err.response &&
+        (err.response.status === 401 || err.response.status === 400)
+      ) {
+        setError('Login failed. Please input correct email or password.');
+      } else {
+        setError(
+          'Please go to your browser site settings, then allow insecure content, reload your website and login again.'
+        );
+      }
     } finally {
       setLoading(false); // Set loading state to false
     }

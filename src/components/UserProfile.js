@@ -8,18 +8,27 @@ import {
   Avatar,
   Button,
   TextField,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from "@mui/material";
 import axios from "axios";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 const UserProfile = () => {
   const { userId } = useParams();
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editedUser, setEditedUser] = useState({});
   const [selectedImage, setSelectedImage] = useState(null);
   const [avatarKey, setAvatarKey] = useState(Date.now()); // Unique key for Avatar re-render
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -36,8 +45,12 @@ const UserProfile = () => {
         );
         setUser(response.data.user);
         setEditedUser(response.data.user);
+        setNotFound(false);
       } catch (error) {
         console.error("Error fetching user details:", error);
+        if (error.response?.status === 404) {
+          setNotFound(true);
+        }
       } finally {
         setLoading(false);
       }
@@ -123,6 +136,40 @@ const UserProfile = () => {
     }
   };
 
+  const handleDeleteClick = () => {
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    const token = localStorage.getItem("token");
+    setDeleting(true);
+
+    try {
+      await axios.delete(
+        `${process.env.REACT_APP_API_URL}/user/delete/${userId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "X-AUTH-SECRET-KEY": process.env.REACT_APP_SECRET_KEY,
+          },
+        }
+      );
+      
+      alert("User deleted successfully!");
+      navigate("/admin/user-list");
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      alert("Failed to delete user. Please try again.");
+      setDeleting(false);
+    } finally {
+      setDeleteDialogOpen(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+  };
+
   if (loading) {
     return (
       <Box
@@ -138,6 +185,38 @@ const UserProfile = () => {
         <Typography variant="h6" sx={{ mt: 2, fontWeight: "bold" }}>
           Please wait... fetching user data
         </Typography>
+      </Box>
+    );
+  }
+
+  if (notFound) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+          flexDirection: "column",
+        }}
+      >
+        <Typography variant="h1" sx={{ fontSize: "120px", fontWeight: "bold", color: "#ccc" }}>
+          404
+        </Typography>
+        <Typography variant="h4" sx={{ mt: 2, fontWeight: "bold" }}>
+          User Not Found
+        </Typography>
+        <Typography variant="body1" sx={{ mt: 2, color: "#666" }}>
+          The user with ID {userId} does not exist.
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          sx={{ mt: 4 }}
+          onClick={() => navigate("/profile")}
+        >
+          Go to Home Page
+        </Button>
       </Box>
     );
   }
@@ -262,9 +341,10 @@ const UserProfile = () => {
             <Button
               variant="contained"
               color="error"
-              onClick={() => alert("Delete functionality not implemented yet")}
+              onClick={handleDeleteClick}
+              disabled={deleting}
             >
-              Delete
+              {deleting ? "Deleting..." : "Delete"}
             </Button>
           </Box>
         </CardContent>
@@ -302,6 +382,31 @@ const UserProfile = () => {
           </Box>
         )}
       </Box>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
+        <DialogTitle id="delete-dialog-title">
+          Confirm Delete
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="delete-dialog-description">
+            Are you sure you want to delete user "{user?.name}"? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleDeleteConfirm} color="error" autoFocus disabled={deleting}>
+            {deleting ? "Deleting..." : "Delete"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

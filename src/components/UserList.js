@@ -11,77 +11,167 @@ import {
   Button,
   CircularProgress,
   Paper,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Alert,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Pagination from './Pagination'; // Reuse the existing Pagination component
 
 const UserList = () => {
-  const [originalUsers, setOriginalUsers] = useState([]);
-  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [searchType, setSearchType] = useState('list'); // 'list', 'id', 'phonenumber', 'email', 'role'
   const [searchQuery, setSearchQuery] = useState('');
-  const [regFrom, setRegFrom] = useState('');
-  const [regTo, setRegTo] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      const token = localStorage.getItem('token');
-      setLoading(true);
-      try {
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/user/list`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+  // Fetch users from backend with pagination
+  const fetchUsers = async (page = 1, count = 10) => {
+    const token = localStorage.getItem('token');
+    setLoading(true);
+    setError('');
+    try {
+      const params = {
+        page,
+        count,
+      };
 
-        // Sort the users in descending order by registration date
-        const sortedUsers = response.data.users.sort(
-          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-        );
+      const response = await axios.get(
+        `${process.env.REACT_APP_API_URL}/user/list`,
+        {
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'X-AUTH-SECRET-KEY': process.env.REACT_APP_SECRET_KEY
+          },
+          params,
+        }
+      );
 
-        setOriginalUsers(sortedUsers); // Store sorted data in the original list
-        setFilteredUsers(sortedUsers); // Also update the filtered list
-      } catch (error) {
-        console.error('Error fetching user list:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUsers();
-  }, []);
-
-  const handleSearch = () => {
-    if (!searchQuery && !regFrom && !regTo) {
-      setFilteredUsers(originalUsers);
-      return;
+      setUsers(response.data.users || []);
+      setTotal(response.data.total || 0);
+    } catch (error) {
+      console.error('Error fetching user list:', error);
+      setError('Error fetching user list. Please try again.');
+    } finally {
+      setLoading(false);
     }
-
-    const filtered = originalUsers.filter((user) => {
-      const matchesQuery =
-        user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.phone_number.includes(searchQuery);
-
-      const userDate = new Date(user.createdAt).setHours(0, 0, 0, 0);
-      const fromDate = regFrom ? new Date(regFrom).setHours(0, 0, 0, 0) : null;
-      const toDate = regTo ? new Date(regTo).setHours(0, 0, 0, 0) : null;
-
-      const matchesDate =
-        (!fromDate || userDate >= fromDate) &&
-        (!toDate || userDate <= toDate);
-
-      return matchesQuery && matchesDate;
-    });
-
-    setFilteredUsers(filtered);
-    setCurrentPage(1); // Reset to the first page
   };
 
-  const startIndex = (currentPage - 1) * rowsPerPage;
-  const currentUsers = filteredUsers.slice(startIndex, startIndex + rowsPerPage);
+  // Search users based on selected type
+  const searchUsers = async () => {
+    const token = localStorage.getItem('token');
+    setLoading(true);
+    setError('');
+    
+    try {
+      let url = '';
+      
+      switch (searchType) {
+        case 'id':
+          if (!searchQuery || isNaN(searchQuery)) {
+            setError('Please enter a valid user ID');
+            setLoading(false);
+            return;
+          }
+          url = `${process.env.REACT_APP_API_URL}/user/search/id/${searchQuery}`;
+          break;
+          
+        case 'phonenumber':
+          if (!searchQuery) {
+            setError('Please enter a phone number');
+            setLoading(false);
+            return;
+          }
+          url = `${process.env.REACT_APP_API_URL}/user/search/phonenumber/${searchQuery}`;
+          break;
+          
+        case 'email':
+          if (!searchQuery) {
+            setError('Please enter an email address');
+            setLoading(false);
+            return;
+          }
+          url = `${process.env.REACT_APP_API_URL}/user/search/email/${searchQuery}`;
+          break;
+          
+        case 'role':
+          if (!searchQuery) {
+            setError('Please enter a role (e.g., Customer, Agent, Merchant)');
+            setLoading(false);
+            return;
+          }
+          url = `${process.env.REACT_APP_API_URL}/user/search/${searchQuery.toLowerCase()}`;
+          break;
+          
+        default:
+          fetchUsers(currentPage, rowsPerPage);
+          return;
+      }
+
+      const response = await axios.get(url, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'X-AUTH-SECRET-KEY': process.env.REACT_APP_SECRET_KEY
+        },
+      });
+
+      // Handle response - could be a single user or array
+      if (Array.isArray(response.data)) {
+        setUsers(response.data);
+        setTotal(response.data.length);
+      } else if (response.data.user) {
+        setUsers([response.data.user]);
+        setTotal(1);
+      } else if (response.data.users) {
+        setUsers(response.data.users);
+        setTotal(response.data.users.length);
+      } else {
+        setUsers([response.data]);
+        setTotal(1);
+      }
+      
+      setCurrentPage(1);
+    } catch (error) {
+      console.error('Error searching users:', error);
+      if (error.response?.status === 404) {
+        setError('No user found with the provided search criteria');
+        setUsers([]);
+        setTotal(0);
+      } else {
+        setError('Error searching users. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = () => {
+    if (searchType === 'list') {
+      fetchUsers(currentPage, rowsPerPage);
+    } else {
+      searchUsers();
+    }
+  };
+
+  const handleReset = () => {
+    setSearchType('list');
+    setSearchQuery('');
+    setCurrentPage(1);
+    setError('');
+    fetchUsers(1, rowsPerPage);
+  };
+
+  useEffect(() => {
+    fetchUsers(currentPage, rowsPerPage);
+    // eslint-disable-next-line
+  }, [currentPage, rowsPerPage]);
 
   const handleViewProfile = (id) => {
     navigate(`/admin/user-profile/${id}`);
@@ -110,34 +200,81 @@ const UserList = () => {
   return (
     <Box sx={{ padding: 4, maxWidth: '1200px', margin: '0 auto' }}>
       <Typography variant="h4" sx={{ mb: 4, textAlign: 'center' }}>
-        User List ({filteredUsers.length})
+        User List ({total})
       </Typography>
-      <Box sx={{ display: 'flex', gap: 2, mb: 4, flexWrap: 'wrap' }}>
-        <TextField
-          label="Search"
-          fullWidth
-          sx={{ flex: 2 }}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-        <TextField
-          label="Registration From"
-          type="date"
-          InputLabelProps={{ shrink: true }}
-          sx={{ flex: 1 }}
-          value={regFrom}
-          onChange={(e) => setRegFrom(e.target.value)}
-        />
-        <TextField
-          label="Registration To"
-          type="date"
-          InputLabelProps={{ shrink: true }}
-          sx={{ flex: 1 }}
-          value={regTo}
-          onChange={(e) => setRegTo(e.target.value)}
-        />
-        <Button variant="contained" onClick={handleSearch}>
+      
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
+          {error}
+        </Alert>
+      )}
+
+      <Box sx={{ display: 'flex', gap: 2, mb: 4, flexWrap: 'wrap', alignItems: 'center' }}>
+        <FormControl sx={{ minWidth: 200 }}>
+          <InputLabel>Search Type</InputLabel>
+          <Select
+            value={searchType}
+            label="Search Type"
+            onChange={(e) => {
+              setSearchType(e.target.value);
+              setSearchQuery('');
+              setError('');
+            }}
+          >
+            <MenuItem value="list">All Users (List)</MenuItem>
+            <MenuItem value="id">Search by ID</MenuItem>
+            <MenuItem value="phonenumber">Search by Phone Number</MenuItem>
+            <MenuItem value="email">Search by Email</MenuItem>
+            <MenuItem value="role">Search by Role</MenuItem>
+          </Select>
+        </FormControl>
+
+        {searchType !== 'list' && (
+          <TextField
+            label={
+              searchType === 'id' 
+                ? 'Enter User ID' 
+                : searchType === 'phonenumber' 
+                ? 'Enter Phone Number' 
+                : searchType === 'email'
+                ? 'Enter Email'
+                : 'Enter Role'
+            }
+            fullWidth
+            sx={{ flex: 2 }}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={
+              searchType === 'id' 
+                ? 'e.g., 123' 
+                : searchType === 'phonenumber' 
+                ? 'e.g., 01686606902' 
+                : searchType === 'email'
+                ? 'e.g., user@example.com'
+                : 'e.g., Customer, Agent, Merchant'
+            }
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                handleSearch();
+              }
+            }}
+          />
+        )}
+
+        <Button 
+          variant="contained" 
+          onClick={handleSearch}
+          disabled={loading}
+        >
           Search
+        </Button>
+        
+        <Button 
+          variant="outlined" 
+          onClick={handleReset}
+          disabled={loading}
+        >
+          Reset
         </Button>
       </Box>
       <Paper elevation={3}>
@@ -154,7 +291,7 @@ const UserList = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {currentUsers.map((user) => (
+            {users.map((user) => (
               <TableRow key={user.id}>
                 <TableCell>{user.id}</TableCell>
                 <TableCell>{user.name}</TableCell>
@@ -173,7 +310,7 @@ const UserList = () => {
         </Table>
       </Paper>
       <Pagination
-        total={filteredUsers.length}
+        total={total}
         rowsPerPage={rowsPerPage}
         currentPage={currentPage}
         onPageChange={(page) => setCurrentPage(page)}

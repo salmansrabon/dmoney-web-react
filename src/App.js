@@ -1,6 +1,7 @@
 // src/App.js
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Home from './components/Home';
 import Login from './components/Login';
 import AdminDashboard from './components/AdminDashboard';
 import Profile from './components/Profile';
@@ -20,8 +21,11 @@ const App = () => {
   return (
     <Router>
       <Routes>
+        {/* Home Route - Redirects based on authentication */}
+        <Route path="/" element={<Home />} />
+        
         {/* Login Route */}
-        <Route path="/" element={<Login />} />
+        <Route path="/login" element={<Login />} />
 
         {/* Protected Routes */}
         <Route

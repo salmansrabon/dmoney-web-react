@@ -35,7 +35,7 @@ const CreateUser = () => {
         },
       });
       alert("User created successfully");
-      navigate("/admin");
+      navigate("/admin/user-list");
     } catch (error) {
       alert("Failed to create user");
     }

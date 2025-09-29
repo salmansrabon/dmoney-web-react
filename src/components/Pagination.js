@@ -8,6 +8,24 @@ const Pagination = ({ total, rowsPerPage, currentPage, onPageChange, onRowsPerPa
     onPageChange(value);
   };
 
+  // Don't render pagination if there are no pages
+  if (totalPages === 0) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          marginTop: 3,
+        }}
+      >
+        <Typography variant="body2" color="text.secondary">
+          No users found
+        </Typography>
+      </Box>
+    );
+  }
+
   return (
     <Box
       sx={{

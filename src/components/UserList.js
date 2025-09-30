@@ -18,7 +18,7 @@ import {
   Alert,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import API from '../services/api';
 import Pagination from './Pagination'; // Reuse the existing Pagination component
 
 const UserList = () => {
@@ -43,13 +43,9 @@ const UserList = () => {
         count,
       };
 
-      const response = await axios.get(
-        `${process.env.REACT_APP_API_URL}/user/list`,
+      const response = await API.get(
+        '/user/list',
         {
-          headers: { 
-            Authorization: `Bearer ${token}`,
-            'X-AUTH-SECRET-KEY': process.env.REACT_APP_SECRET_KEY
-          },
           params,
         }
       );
@@ -115,12 +111,7 @@ const UserList = () => {
           return;
       }
 
-      const response = await axios.get(url, {
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          'X-AUTH-SECRET-KEY': process.env.REACT_APP_SECRET_KEY
-        },
-      });
+      const response = await API.get(url);
 
       // Handle response - could be a single user or array
       if (Array.isArray(response.data)) {

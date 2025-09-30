@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import API from '../services/api';
 import {
   Box,
   Typography,
@@ -15,12 +16,18 @@ import {
 const Profile = () => {
   const [user, setUser] = useState({});
   const [loading, setLoading] = useState(true); // Add a loading state
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProfile = async () => {
       const token = localStorage.getItem('token');
       const email = localStorage.getItem('email'); // Retrieve the email from localStorage
-      const secretKey = process.env.REACT_APP_SECRET_KEY; // Retrieve the secret key from .env
+
+      // If no token, redirect to login immediately
+      if (!token) {
+        navigate('/login', { replace: true });
+        return;
+      }
 
       if (!email) {
         console.error('No email found in localStorage');
@@ -30,16 +37,9 @@ const Profile = () => {
 
       try {
         // Call the email search API using POST
-        const response = await axios.post(
-          `${process.env.REACT_APP_API_URL}/user/search/email`,
-          { email }, // Send the email in the request body
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'X-AUTH-SECRET-KEY': secretKey, // Add the secret key in the header
-              'Content-Type': 'application/json',
-            },
-          }
+        const response = await API.post(
+          '/user/search/email',
+          { email } // Send the email in the request body
         );
 
         // Set the fetched user data to the state
@@ -52,7 +52,7 @@ const Profile = () => {
     };
 
     fetchProfile();
-  }, []);
+  }, [navigate]);
 
   // Show a loading spinner or message while data is loading
   if (loading) {

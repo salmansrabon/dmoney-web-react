@@ -11,7 +11,7 @@ import {
   Paper,
   CircularProgress,
 } from "@mui/material";
-import axios from "axios";
+import API from "../services/api";
 import Pagination from "./Pagination"; // Assuming you already have a Pagination component
 
 const SelfStatement = () => {
@@ -33,16 +33,9 @@ const SelfStatement = () => {
       }
   
       try {
-        const res = await axios.post(
-          `${process.env.REACT_APP_API_URL}/user/search/email`, // POST endpoint
-          { email }, // Send email in the body
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "X-AUTH-SECRET-KEY": process.env.REACT_APP_SECRET_KEY,
-              "Content-Type": "application/json", // Specify JSON format
-            },
-          }
+        const res = await API.post(
+          "/user/search/email", // POST endpoint
+          { email } // Send email in the body
         );
   
         setPhoneNumber(res.data.user.phone_number); // Set phone number for API calls
@@ -63,14 +56,8 @@ const SelfStatement = () => {
       setLoading(true);
 
       try {
-        const response = await axios.get(
-          `${process.env.REACT_APP_API_URL}/transaction/statement/${phoneNumber}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "X-AUTH-SECRET-KEY": process.env.REACT_APP_SECRET_KEY,
-            },
-          }
+        const response = await API.get(
+          `/transaction/statement/${phoneNumber}`
         );
 
         setTransactions(response.data.transactions);

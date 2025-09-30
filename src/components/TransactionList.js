@@ -10,7 +10,7 @@ import {
   CircularProgress,
   Paper,
 } from "@mui/material";
-import axios from "axios";
+import API from "../services/api";
 import Pagination from "./Pagination"; // Your existing Pagination component
 
 const TransactionList = () => {
@@ -27,13 +27,9 @@ const TransactionList = () => {
 
       try {
         // Remove hardcoded limit and use dynamic params
-        const response = await axios.get(
-          `${process.env.REACT_APP_API_URL}/transaction/list`,
+        const response = await API.get(
+          "/transaction/list",
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "X-AUTH-SECRET-KEY": process.env.REACT_APP_SECRET_KEY,
-            },
             params: {
               limit: rowsPerPage,
               offset: (currentPage - 1) * rowsPerPage,

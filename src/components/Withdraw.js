@@ -7,7 +7,7 @@ import {
   Paper,
   CircularProgress,
 } from "@mui/material";
-import axios from "axios";
+import API from "../services/api";
 
 const Withdraw = () => {
   const [formData, setFormData] = useState({
@@ -50,15 +50,9 @@ const Withdraw = () => {
     const token = localStorage.getItem("token");
 
     try {
-      const res = await axios.post(
-        `${process.env.REACT_APP_API_URL}/transaction/withdraw`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-AUTH-SECRET-KEY": process.env.REACT_APP_SECRET_KEY,
-          },
-        }
+      const res = await API.post(
+        "/transaction/withdraw",
+        formData
       );
 
       setResponse(res.data);

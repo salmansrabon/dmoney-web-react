@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import axios from "axios";
+import API from "../services/api";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
@@ -28,12 +28,7 @@ const CreateUser = () => {
     e.preventDefault();
     const token = localStorage.getItem("token");
     try {
-      await axios.post(`${process.env.REACT_APP_API_URL}/user/create`, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "X-AUTH-SECRET-KEY": process.env.REACT_APP_SECRET_KEY,
-        },
-      });
+      await API.post("/user/create", formData);
       alert("User created successfully");
       navigate("/admin/user-list");
     } catch (error) {

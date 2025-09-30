@@ -7,7 +7,7 @@ import {
   Paper,
   CircularProgress,
 } from "@mui/material";
-import axios from "axios";
+import API from "../services/api";
 
 const Deposit = () => {
   const [formData, setFormData] = useState({
@@ -57,15 +57,9 @@ const Deposit = () => {
     const token = localStorage.getItem("token");
 
     try {
-      const res = await axios.post(
-        `${process.env.REACT_APP_API_URL}/transaction/deposit`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-AUTH-SECRET-KEY": process.env.REACT_APP_SECRET_KEY,
-          },
-        }
+      const res = await API.post(
+        "/transaction/deposit",
+        formData
       );
 
       setResponse(res.data);

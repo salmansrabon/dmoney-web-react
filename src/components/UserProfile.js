@@ -14,7 +14,7 @@ import {
   DialogContentText,
   DialogActions,
 } from "@mui/material";
-import axios from "axios";
+import API from "../services/api";
 import { useParams, useNavigate } from "react-router-dom";
 
 const UserProfile = () => {
@@ -34,14 +34,8 @@ const UserProfile = () => {
     const fetchUser = async () => {
       const token = localStorage.getItem("token");
       try {
-        const response = await axios.get(
-          `${process.env.REACT_APP_API_URL}/user/search/id/${userId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "X-AUTH-SECRET-KEY": process.env.REACT_APP_SECRET_KEY,
-            },
-          }
+        const response = await API.get(
+          `/user/search/id/${userId}`
         );
         setUser(response.data.user);
         setEditedUser(response.data.user);
@@ -83,15 +77,9 @@ const UserProfile = () => {
           role: editedUser.role,
         };
 
-        await axios.put(
-          `${process.env.REACT_APP_API_URL}/user/update/${userId}`,
-          payload,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "X-AUTH-SECRET-KEY": process.env.REACT_APP_SECRET_KEY,
-            },
-          }
+        await API.put(
+          `/user/update/${userId}`,
+          payload
         );
         alert("User details updated successfully!");
       }
@@ -100,13 +88,11 @@ const UserProfile = () => {
         const formData = new FormData();
         formData.append("image", selectedImage);
 
-        const response = await axios.post(
-          `${process.env.REACT_APP_API_URL}/user/upload/${userId}`,
+        const response = await API.post(
+          `/user/upload/${userId}`,
           formData,
           {
             headers: {
-              Authorization: `Bearer ${token}`,
-              "X-AUTH-SECRET-KEY": process.env.REACT_APP_SECRET_KEY,
               "Content-Type": "multipart/form-data",
             },
           }
@@ -145,14 +131,8 @@ const UserProfile = () => {
     setDeleting(true);
 
     try {
-      await axios.delete(
-        `${process.env.REACT_APP_API_URL}/user/delete/${userId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-AUTH-SECRET-KEY": process.env.REACT_APP_SECRET_KEY,
-          },
-        }
+      await API.delete(
+        `/user/delete/${userId}`
       );
       
       alert("User deleted successfully!");

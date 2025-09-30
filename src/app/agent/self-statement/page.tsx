@@ -38,6 +38,7 @@ export default function SelfStatement() {
   const [totalTransactions, setTotalTransactions] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [currentBalance, setCurrentBalance] = useState<string>('0');
 
   useEffect(() => {
     const fetchUserPhone = async () => {
@@ -60,6 +61,7 @@ export default function SelfStatement() {
         const encodedEmail = encodeURIComponent(email);
         const res = await API.get(`/user/search/email/${encodedEmail}`);
         setPhoneNumber(res.data.user.phone_number);
+        setCurrentBalance(res.data.user.balance || localStorage.getItem('balance') || '0');
       } catch (error) {
         console.error('Error fetching user phone number:', error);
         setLoading(false);
@@ -128,9 +130,14 @@ export default function SelfStatement() {
   return (
     <DashboardLayout>
       <Box>
-        <Typography variant="h5" sx={{ mb: 3, textAlign: 'center' }}>
-          Transaction History {!loading && `(Total: ${totalTransactions})`}
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h5">
+            Transaction History {!loading && `(Total: ${totalTransactions})`}
+          </Typography>
+          <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
+            Current Balance: BDT {parseFloat(currentBalance).toFixed(2)}
+          </Typography>
+        </Box>
 
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>

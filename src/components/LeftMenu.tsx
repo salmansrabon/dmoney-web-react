@@ -32,11 +32,11 @@ const LeftMenu = () => {
           { name: 'Send Money', path: '/customer/send-money' },
           { name: 'Cash Out', path: '/customer/cash-out' },
           { name: 'Payment', path: '/customer/payment' },
-          { name: 'Self Statement', path: '/customer/statement' },
+          { name: 'Self Statement', path: '/customer/self-statement' },
         ],
         Merchant: [
           { name: 'Cash Out', path: '/merchant/cash-out' },
-          { name: 'Self Statement', path: '/merchant/statement' },
+          { name: 'Self Statement', path: '/merchant/self-statement' },
         ],
       };
 

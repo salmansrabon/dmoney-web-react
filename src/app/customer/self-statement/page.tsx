@@ -20,6 +20,7 @@ import {
 
 interface Transaction {
   id: number;
+  account: string;
   from_account: string;
   to_account: string;
   description: string;
@@ -27,10 +28,11 @@ interface Transaction {
   debit: number;
   credit: number;
   createdAt: string;
+  updatedAt: string;
   runningBalance?: number;
 }
 
-export default function AgentStatement() {
+export default function Statement() {
   const router = useRouter();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,6 +40,7 @@ export default function AgentStatement() {
   const [totalTransactions, setTotalTransactions] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [currentBalance, setCurrentBalance] = useState<string>('0');
 
   useEffect(() => {
     const fetchUserPhone = async () => {
@@ -59,6 +62,7 @@ export default function AgentStatement() {
         const encodedEmail = encodeURIComponent(email);
         const res = await API.get(`/user/search/email/${encodedEmail}`);
         setPhoneNumber(res.data.user.phone_number);
+        setCurrentBalance(res.data.user.balance || localStorage.getItem('balance') || '0');
       } catch (error) {
         console.error('Error fetching user phone number:', error);
         setLoading(false);
@@ -93,11 +97,20 @@ export default function AgentStatement() {
     fetchTransactions();
   }, [phoneNumber, currentPage, rowsPerPage]);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
+  const handleRowsPerPageChange = (rows: number) => {
+    setRowsPerPage(rows);
+    setCurrentPage(1);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString();
+  };
+
+  // Calculate running balance for each transaction
   const calculateRunningBalance = () => {
     let balance = 0;
     return transactions.map(transaction => {
@@ -113,21 +126,17 @@ export default function AgentStatement() {
 
   const transactionsWithBalance = calculateRunningBalance();
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  const handleRowsPerPageChange = (rows: number) => {
-    setRowsPerPage(rows);
-    setCurrentPage(1);
-  };
-
   return (
     <DashboardLayout>
       <Box>
-        <Typography variant="h5" sx={{ mb: 3, textAlign: 'center' }}>
-          Transaction History {!loading && `(Total: ${totalTransactions})`}
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h5">
+            Transaction History {!loading && `(Total: ${totalTransactions})`}
+          </Typography>
+          <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
+            Current Balance: BDT {parseFloat(currentBalance).toFixed(2)}
+          </Typography>
+        </Box>
 
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
@@ -135,47 +144,37 @@ export default function AgentStatement() {
           </Box>
         ) : (
           <>
-            <TableContainer component={Paper} elevation={3}>
+            <TableContainer component={Paper}>
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell><strong>ID</strong></TableCell>
-                    <TableCell><strong>From Account</strong></TableCell>
-                    <TableCell><strong>To Account</strong></TableCell>
-                    <TableCell><strong>Description</strong></TableCell>
-                    <TableCell><strong>Transaction ID</strong></TableCell>
-                    <TableCell><strong>Debit</strong></TableCell>
-                    <TableCell><strong>Credit</strong></TableCell>
-                    <TableCell><strong>Balance</strong></TableCell>
-                    <TableCell><strong>Transaction Date</strong></TableCell>
+                    <TableCell>Transaction ID</TableCell>
+                    <TableCell>Sender Account</TableCell>
+                    <TableCell>Receiver Account</TableCell>
+                    <TableCell>Debit</TableCell>
+                    <TableCell>Credit</TableCell>
+                    <TableCell>Balance</TableCell>
+                    <TableCell>Type</TableCell>
+                    <TableCell>Date</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {transactionsWithBalance.length > 0 ? (
-                    transactionsWithBalance.map((transaction) => (
-                      <TableRow key={transaction.id}>
+                    transactionsWithBalance.map((transaction, index) => (
+                      <TableRow key={`${transaction.id}-${index}`}>
                         <TableCell>{transaction.id}</TableCell>
                         <TableCell>{transaction.from_account}</TableCell>
                         <TableCell>{transaction.to_account}</TableCell>
+                        <TableCell>{transaction.debit ? transaction.debit.toFixed(2) : '-'}</TableCell>
+                        <TableCell>{transaction.credit ? transaction.credit.toFixed(2) : '-'}</TableCell>
+                        <TableCell><strong>{transaction.runningBalance?.toFixed(2) || '0.00'}</strong></TableCell>
                         <TableCell>{transaction.description}</TableCell>
-                        <TableCell>{transaction.trnxId}</TableCell>
-                        <TableCell>
-                          {transaction.debit ? transaction.debit.toFixed(2) : '0.00'}
-                        </TableCell>
-                        <TableCell>
-                          {transaction.credit ? transaction.credit.toFixed(2) : '0.00'}
-                        </TableCell>
-                        <TableCell>
-                          <strong>
-                            {transaction.runningBalance?.toFixed(2) || '0.00'}
-                          </strong>
-                        </TableCell>
                         <TableCell>{formatDate(transaction.createdAt)}</TableCell>
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={9} align="center">
+                      <TableCell colSpan={8} align="center">
                         No transactions found
                       </TableCell>
                     </TableRow>

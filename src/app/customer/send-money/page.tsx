@@ -71,12 +71,12 @@ export default function SendMoney() {
 
   return (
     <DashboardLayout>
-      <Box>
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '70vh' }}>
         <Typography variant="h4" gutterBottom>
           Send Money
         </Typography>
 
-        <Paper sx={{ p: 3, mt: 3, maxWidth: 600 }}>
+        <Paper sx={{ p: 3, mt: 3, maxWidth: 600, width: '100%' }}>
           <form onSubmit={handleSubmit}>
             <Stack spacing={2}>
               <TextField

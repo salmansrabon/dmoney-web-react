@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import API from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
-import Pagination from '@/components/Pagination';
 import {
   Box,
   Typography,
@@ -34,11 +33,8 @@ interface Transaction {
 
 export default function MerchantStatement() {
   const router = useRouter();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalTransactions, setTotalTransactions] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [currentBalance, setCurrentBalance] = useState<string>('0');
   
@@ -84,18 +80,18 @@ export default function MerchantStatement() {
   useEffect(() => {
     if (!phoneNumber) return;
 
-    const fetchTransactions = async () => {
+    const fetchAllTransactions = async () => {
       setLoading(true);
 
       try {
+        // Fetch all transactions
         const response = await API.get(`/transaction/statement/${phoneNumber}`, {
           params: {
-            page: currentPage,
-            count: rowsPerPage,
+            page: 1,
+            count: 10000, // Request all transactions
           },
         });
-        setTransactions(response.data.transactions || []);
-        setTotalTransactions(response.data.total || 0);
+        setAllTransactions(response.data.transactions || []);
       } catch (error) {
         console.error('Error fetching transactions:', error);
       } finally {
@@ -103,8 +99,8 @@ export default function MerchantStatement() {
       }
     };
 
-    fetchTransactions();
-  }, [phoneNumber, currentPage, rowsPerPage]);
+    fetchAllTransactions();
+  }, [phoneNumber]);
 
   // Filter transactions by date range
   const filterTransactionsByDate = (transactions: Transaction[]) => {
@@ -121,7 +117,7 @@ export default function MerchantStatement() {
     });
   };
 
-  const filteredTransactions = filterTransactionsByDate(transactions);
+  const filteredTransactions = filterTransactionsByDate(allTransactions);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -129,8 +125,30 @@ export default function MerchantStatement() {
   };
 
   const calculateRunningBalance = () => {
-    let balance = 0;
-    // Reverse to get oldest first, calculate balance, then keep in ascending order
+    // First, calculate the balance of all transactions BEFORE the filtered date range
+    let prevBalance = 0;
+    if (fromDate) {
+      const filterStart = new Date(fromDate);
+      filterStart.setHours(0, 0, 0, 0);
+      
+      // Get all transactions before the filter start date (sorted oldest first)
+      const previousTransactions = [...allTransactions]
+        .reverse()
+        .filter(t => new Date(t.createdAt) < filterStart);
+      
+      // Calculate the balance up to the filter start date
+      previousTransactions.forEach(transaction => {
+        if (transaction.credit) {
+          prevBalance += transaction.credit;
+        }
+        if (transaction.debit) {
+          prevBalance -= transaction.debit;
+        }
+      });
+    }
+    
+    // Now calculate running balance for filtered transactions, starting from prevBalance
+    let balance = prevBalance;
     const reversedTransactions = [...filteredTransactions].reverse();
     return reversedTransactions.map(transaction => {
       if (transaction.credit) {
@@ -145,21 +163,12 @@ export default function MerchantStatement() {
 
   const transactionsWithBalance = calculateRunningBalance();
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  const handleRowsPerPageChange = (rows: number) => {
-    setRowsPerPage(rows);
-    setCurrentPage(1);
-  };
-
   return (
     <DashboardLayout>
       <Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Typography variant="h5">
-            Transaction History {!loading && `(Total: ${totalTransactions})`}
+            Transaction History {!loading && `(Total: ${allTransactions.length})`}
           </Typography>
           <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
             Current Balance: BDT {parseFloat(currentBalance).toFixed(2)}
@@ -265,14 +274,6 @@ export default function MerchantStatement() {
                 </TableBody>
               </Table>
             </TableContainer>
-
-            <Pagination
-              total={totalTransactions}
-              rowsPerPage={rowsPerPage}
-              currentPage={currentPage}
-              onPageChange={handlePageChange}
-              onRowsPerPageChange={handleRowsPerPageChange}
-            />
           </>
         )}
       </Box>

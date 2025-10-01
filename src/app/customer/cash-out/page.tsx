@@ -71,12 +71,12 @@ export default function CashOut() {
 
   return (
     <DashboardLayout>
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '70vh' }}>
-        <Typography variant="h4" gutterBottom>
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '70vh', px: { xs: 2, sm: 3 } }}>
+        <Typography variant="h4" gutterBottom sx={{ fontSize: { xs: '1.75rem', sm: '2.125rem' } }}>
           Cash Out
         </Typography>
 
-        <Paper sx={{ p: 3, mt: 3, maxWidth: 600, width: '100%' }}>
+        <Paper sx={{ p: { xs: 2, sm: 3 }, mt: 3, maxWidth: 600, width: '100%' }}>
           <form onSubmit={handleSubmit}>
             <Stack spacing={2}>
               <TextField

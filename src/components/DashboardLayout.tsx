@@ -3,14 +3,18 @@
 import React, { ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { Box, CssBaseline, AppBar, Toolbar, Typography, IconButton, Avatar, Menu, MenuItem } from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
 import LeftMenu from './LeftMenu';
 
 interface DashboardLayoutProps {
   children: ReactNode;
 }
 
+const drawerWidth = 240;
+
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [mobileOpen, setMobileOpen] = React.useState<boolean>(false);
   const [role, setRole] = React.useState<string>('User');
   const [isAuthenticated, setIsAuthenticated] = React.useState<boolean>(false);
   const router = useRouter();
@@ -38,6 +42,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   if (!isAuthenticated) {
     return null;
   }
+
+  const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen);
+  };
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -69,21 +77,28 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       <CssBaseline />
-      <LeftMenu />
-      <Box
-        sx={{
-          flexGrow: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
+      {/* AppBar for the Header */}
+      <AppBar 
+        position="fixed" 
+        sx={{ 
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          width: { md: `calc(100% - ${drawerWidth}px)` },
+          ml: { md: `${drawerWidth}px` },
         }}
       >
-        {/* AppBar for the Header */}
-        <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
-          <Toolbar>
-            <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-              {role} Dashboard
-            </Typography>
+        <Toolbar>
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            edge="start"
+            onClick={handleDrawerToggle}
+            sx={{ mr: 2, display: { md: 'none' } }}
+          >
+            <MenuIcon />
+          </IconButton>
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+            {role} Dashboard
+          </Typography>
             <IconButton onClick={handleMenuOpen} sx={{ p: 0 }}>
               <Avatar alt="User Profile" src="/static/images/avatar/1.jpg" />
             </IconButton>
@@ -104,18 +119,23 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <MenuItem onClick={handleChangePassword}>Change Password</MenuItem>
               <MenuItem onClick={handleLogout}>Logout</MenuItem>
             </Menu>
-          </Toolbar>
-        </AppBar>
-
-        {/* Main Content Section */}
-        <Box
-          sx={{
-            marginTop: '64px',
-            width: '100%',
-            maxWidth: '1200px',
-            padding: 3,
-          }}
-        >
+        </Toolbar>
+      </AppBar>
+      
+      {/* Navigation Menu */}
+      <LeftMenu mobileOpen={mobileOpen} onDrawerToggle={handleDrawerToggle} />
+      
+      {/* Main Content Section */}
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          p: 3,
+          width: { xs: '100%', md: `calc(100% - ${drawerWidth}px)` },
+          mt: '64px',
+        }}
+      >
+        <Box sx={{ maxWidth: '1200px', margin: '0 auto' }}>
           {children}
         </Box>
       </Box>

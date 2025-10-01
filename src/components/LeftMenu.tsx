@@ -2,14 +2,21 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Drawer, List, ListItem, ListItemText, Toolbar } from '@mui/material';
+import { Drawer, List, ListItem, ListItemText, Toolbar, Box, Typography } from '@mui/material';
 
 interface MenuItem {
   name: string;
   path: string;
 }
 
-const LeftMenu = () => {
+interface LeftMenuProps {
+  mobileOpen: boolean;
+  onDrawerToggle: () => void;
+}
+
+const drawerWidth = 240;
+
+const LeftMenu = ({ mobileOpen, onDrawerToggle }: LeftMenuProps) => {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
 
   useEffect(() => {
@@ -45,22 +52,28 @@ const LeftMenu = () => {
     }
   }, []);
 
-  return (
-    <Drawer
-      variant="permanent"
-      sx={{
-        width: 240,
-        flexShrink: 0,
-        [`& .MuiDrawer-paper`]: { width: 240, boxSizing: 'border-box' },
-      }}
-    >
-      <Toolbar />
-      <List sx={{ mt: 2 }}>
+  const drawer = (
+    <>
+      <Box sx={{ 
+        height: '64px',
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        borderBottom: '1px solid rgba(0, 0, 0, 0.12)',
+        bgcolor: 'primary.main',
+        color: 'white'
+      }}>
+        <Typography variant="h6" fontWeight="bold">
+          DMoney
+        </Typography>
+      </Box>
+      <List>
         {menuItems.map((item) => (
           <ListItem 
             key={item.name} 
             component={Link} 
             href={item.path}
+            onClick={onDrawerToggle}
             sx={{ 
               cursor: 'pointer',
               '&:hover': {
@@ -72,7 +85,45 @@ const LeftMenu = () => {
           </ListItem>
         ))}
       </List>
-    </Drawer>
+    </>
+  );
+
+  return (
+    <Box component="nav" sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}>
+      {/* Mobile drawer */}
+      <Drawer
+        variant="temporary"
+        open={mobileOpen}
+        onClose={onDrawerToggle}
+        ModalProps={{
+          keepMounted: true, // Better open performance on mobile.
+        }}
+        sx={{
+          display: { xs: 'block', md: 'none' },
+          '& .MuiDrawer-paper': { 
+            boxSizing: 'border-box', 
+            width: drawerWidth 
+          },
+        }}
+      >
+        {drawer}
+      </Drawer>
+      
+      {/* Desktop drawer */}
+      <Drawer
+        variant="permanent"
+        sx={{
+          display: { xs: 'none', md: 'block' },
+          '& .MuiDrawer-paper': { 
+            boxSizing: 'border-box', 
+            width: drawerWidth 
+          },
+        }}
+        open
+      >
+        {drawer}
+      </Drawer>
+    </Box>
   );
 };
 

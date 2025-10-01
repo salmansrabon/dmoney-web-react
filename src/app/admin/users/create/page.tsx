@@ -50,8 +50,10 @@ export default function CreateUser() {
     setLoading(true);
 
     try {
-      await API.post('/user/create', formData);
-      setSuccess('User created successfully!');
+      const response = await API.post('/user/create', formData);
+      // Use the message from API response
+      const successMessage = response.data?.message || 'User created successfully!';
+      setSuccess(successMessage);
       setFormData({
         name: '',
         email: '',
@@ -66,7 +68,9 @@ export default function CreateUser() {
         router.push('/admin/users');
       }, 2000);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to create user');
+      // Display the specific error message from API response
+      const errorMessage = err.response?.data?.message || 'Failed to create user';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

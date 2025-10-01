@@ -66,12 +66,8 @@ export default function UserList() {
     fetchUsers();
   }, [currentPage, searchTerm, roleFilter, router]);
 
-  const sortUsersByCreatedAt = (usersList: User[]) => {
-    return usersList.sort((a, b) => {
-      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return dateB - dateA; // Descending order (newest first)
-    });
+  const sortUsersById = (usersList: User[]) => {
+    return usersList.sort((a, b) => b.id - a.id); // Descending order (highest ID first)
   };
 
   const fetchUsers = async () => {
@@ -99,7 +95,7 @@ export default function UserList() {
       });
 
       const usersList = response.data.users || [];
-      setUsers(sortUsersByCreatedAt(usersList));
+      setUsers(sortUsersById(usersList));
       setTotalUsers(response.data.total || response.data.count || 0);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -126,7 +122,7 @@ export default function UserList() {
         }
         // API returns a single user object, so wrap it in an array
         const usersList = response.data.user ? [response.data.user] : [];
-        setUsers(sortUsersByCreatedAt(usersList));
+        setUsers(sortUsersById(usersList));
         setTotalUsers(response.data.user ? 1 : 0);
       } else if (term.includes('@')) {
         // If it contains @, search by email
@@ -134,14 +130,14 @@ export default function UserList() {
         response = await API.get(`/user/search/email/${encodedEmail}`);
         // API returns a single user object, so wrap it in an array
         const usersList = response.data.user ? [response.data.user] : [];
-        setUsers(sortUsersByCreatedAt(usersList));
+        setUsers(sortUsersById(usersList));
         setTotalUsers(response.data.user ? 1 : 0);
       } else {
         // Otherwise, try to search by phone number or show empty
         try {
           response = await API.get(`/user/search/phonenumber/${term}`);
           const usersList = response.data.user ? [response.data.user] : [];
-          setUsers(sortUsersByCreatedAt(usersList));
+          setUsers(sortUsersById(usersList));
           setTotalUsers(response.data.user ? 1 : 0);
         } catch (err) {
           setUsers([]);
@@ -159,7 +155,7 @@ export default function UserList() {
     try {
       const response = await API.get(`/user/search/${roleFilter.toLowerCase()}`);
       const usersList = response.data.users || [];
-      setUsers(sortUsersByCreatedAt(usersList));
+      setUsers(sortUsersById(usersList));
       setTotalUsers(response.data.users?.length || 0);
     } catch (error) {
       console.error('Error searching by role:', error);

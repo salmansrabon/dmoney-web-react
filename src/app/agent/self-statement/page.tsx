@@ -16,6 +16,8 @@ import {
   TableRow,
   Paper,
   CircularProgress,
+  TextField,
+  Button,
 } from '@mui/material';
 
 interface Transaction {
@@ -39,6 +41,15 @@ export default function SelfStatement() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [currentBalance, setCurrentBalance] = useState<string>('0');
+  
+  // Get today's date in YYYY-MM-DD format
+  const getTodayDate = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  };
+  
+  const [fromDate, setFromDate] = useState<string>(getTodayDate());
+  const [toDate, setToDate] = useState<string>(getTodayDate());
 
   useEffect(() => {
     const fetchUserPhone = async () => {
@@ -97,15 +108,34 @@ export default function SelfStatement() {
     fetchTransactions();
   }, [phoneNumber, currentPage, rowsPerPage]);
 
+  // Filter transactions by date range
+  const filterTransactionsByDate = (transactions: Transaction[]) => {
+    if (!fromDate || !toDate) return transactions;
+    
+    const from = new Date(fromDate);
+    from.setHours(0, 0, 0, 0);
+    const to = new Date(toDate);
+    to.setHours(23, 59, 59, 999);
+    
+    return transactions.filter(transaction => {
+      const transactionDate = new Date(transaction.createdAt);
+      return transactionDate >= from && transactionDate <= to;
+    });
+  };
+
+  const filteredTransactions = filterTransactionsByDate(transactions);
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
   };
 
-  // Calculate running balance for each transaction
+  // Calculate running balance for each transaction in ascending order
   const calculateRunningBalance = () => {
     let balance = 0;
-    return transactions.map(transaction => {
+    // Reverse to get oldest first, calculate balance, then keep in ascending order
+    const reversedTransactions = [...filteredTransactions].reverse();
+    return reversedTransactions.map(transaction => {
       if (transaction.credit) {
         balance += transaction.credit;
       }
@@ -138,6 +168,51 @@ export default function SelfStatement() {
             Current Balance: BDT {parseFloat(currentBalance).toFixed(2)}
           </Typography>
         </Box>
+
+        {/* Date Filter */}
+        <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+            <Box sx={{ flex: '1 1 250px', minWidth: '200px' }}>
+              <TextField
+                label="From Date"
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                fullWidth
+                InputLabelProps={{
+                  shrink: true,
+                }}
+              />
+            </Box>
+            <Box sx={{ flex: '1 1 250px', minWidth: '200px' }}>
+              <TextField
+                label="To Date"
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                fullWidth
+                InputLabelProps={{
+                  shrink: true,
+                }}
+              />
+            </Box>
+            <Box sx={{ flex: '1 1 200px', minWidth: '150px' }}>
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  setFromDate(getTodayDate());
+                  setToDate(getTodayDate());
+                }}
+                fullWidth
+              >
+                Reset to Today
+              </Button>
+            </Box>
+          </Box>
+          <Typography variant="body2" sx={{ mt: 2, color: 'text.secondary' }}>
+            Showing {transactionsWithBalance.length} transaction(s) from {fromDate} to {toDate}
+          </Typography>
+        </Paper>
 
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>

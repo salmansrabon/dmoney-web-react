@@ -14,8 +14,16 @@ Based on the Postman collection, here are all the API endpoints used in the D-Mo
     "password": "1234"
   }
   ```
+  OR
+  ```json
+  {
+    "email": "01686606901",
+    "password": "1234"
+  }
+  ```
 - **Response**: Returns `token`
-- **Status**: ✅ Implemented in `/app/login/page.tsx`
+- **Note**: The `email` property accepts both email addresses and phone numbers as values
+- **Status**: ✅ Implemented in `/app/login/page.tsx` (Frontend supports both email and phone number login)
 
 ## User Management
 

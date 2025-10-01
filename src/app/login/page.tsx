@@ -29,7 +29,7 @@ export default function Login() {
 
     // Front-end validation for empty fields
     if (!email || !password) {
-      setValidationError('Email and Password cannot be empty.');
+      setValidationError('Email/Phone Number and Password cannot be empty.');
       return;
     }
 
@@ -39,9 +39,9 @@ export default function Login() {
       // Debug: Log API URL
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
       console.log('API URL:', apiUrl);
-      console.log('Attempting login with email:', email);
+      console.log('Attempting login with:', email);
 
-      // Step 1: Authenticate user
+      // Step 1: Authenticate user (email property accepts both email and phone number)
       const loginResponse = await axios.post(
         `${apiUrl}/user/login`,
         { email, password }
@@ -49,23 +49,40 @@ export default function Login() {
 
       const token = loginResponse.data.token;
 
-      // Step 2: Fetch user details using email
+      // Step 2: Fetch user details using email or phone number
       const secretKey = process.env.NEXT_PUBLIC_SECRET_KEY || 'ROADTOSDET';
       
-      // URL encode the email to handle special characters like @
-      const encodedEmail = encodeURIComponent(email);
+      // Determine if input is email or phone number
+      const isEmail = email.includes('@');
+      const encodedValue = encodeURIComponent(email);
       
-      const emailSearchResponse = await axios.get(
-        `${apiUrl}/user/search/email/${encodedEmail}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'X-AUTH-SECRET-KEY': secretKey,
-          },
-        }
-      );
-
-      const user = emailSearchResponse.data.user;
+      let user;
+      if (isEmail) {
+        // Search by email
+        const emailSearchResponse = await axios.get(
+          `${apiUrl}/user/search/email/${encodedValue}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'X-AUTH-SECRET-KEY': secretKey,
+            },
+          }
+        );
+        user = emailSearchResponse.data.user;
+      } else {
+        // Search by phone number
+        const phoneSearchResponse = await axios.get(
+          `${apiUrl}/user/search/phonenumber/${encodedValue}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'X-AUTH-SECRET-KEY': secretKey,
+            },
+          }
+        );
+        user = phoneSearchResponse.data.user;
+      }
+      
       console.log('User data received:', user);
 
       // Step 3: Store token and user details in localStorage
@@ -98,7 +115,7 @@ export default function Login() {
         err.response &&
         (err.response.status === 401 || err.response.status === 400)
       ) {
-        setError('Login failed. Please input correct email or password.');
+        setError('Login failed. Please input correct email/phone number or password.');
       } else if (err.code === 'ERR_NETWORK') {
         setError('Network error. Please ensure the backend API is running at http://localhost:3000');
       } else {
@@ -160,9 +177,10 @@ export default function Login() {
               margin="normal"
               required
               fullWidth
-              label="Email Address"
+              label="Email or Phone Number"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter email or phone number"
               sx={{ marginBottom: 2 }}
             />
             <TextField

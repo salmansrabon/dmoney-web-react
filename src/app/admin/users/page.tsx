@@ -91,11 +91,12 @@ export default function UserList() {
         params: {
           count: rowsPerPage,
           page: currentPage,
+          order: 'desc',
         }
       });
 
       const usersList = response.data.users || [];
-      setUsers(sortUsersById(usersList));
+      setUsers(usersList);
       setTotalUsers(response.data.total || response.data.count || 0);
     } catch (error) {
       console.error('Error fetching users:', error);

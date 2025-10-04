@@ -44,6 +44,7 @@ interface User {
 export default function UserList() {
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
+  const [allSearchResults, setAllSearchResults] = useState<User[]>([]); // Store all search results for pagination
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
@@ -62,9 +63,8 @@ export default function UserList() {
       router.replace('/login');
       return;
     }
-
     fetchUsers();
-  }, [currentPage, searchTerm, roleFilter, router]);
+  }, [currentPage, searchTerm, roleFilter, rowsPerPage, router]);
 
   const sortUsersById = (usersList: User[]) => {
     return usersList.sort((a, b) => b.id - a.id); // Descending order (highest ID first)
@@ -73,19 +73,16 @@ export default function UserList() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      
       // If there's a search term, use the appropriate search endpoint
       if (searchTerm.trim()) {
         await searchUsers();
         return;
       }
-      
       // If there's a role filter, use the role search endpoint
       if (roleFilter) {
         await searchByRole();
         return;
       }
-      
       // Otherwise, fetch all users with pagination
       const response = await API.get('/user/list', {
         params: {
@@ -94,14 +91,15 @@ export default function UserList() {
           order: 'desc',
         }
       });
-
       const usersList = response.data.users || [];
       setUsers(usersList);
       setTotalUsers(response.data.total || response.data.count || 0);
+      setAllSearchResults([]); // Clear search results if not searching
     } catch (error) {
       console.error('Error fetching users:', error);
       setUsers([]);
       setTotalUsers(0);
+      setAllSearchResults([]);
     } finally {
       setLoading(false);
     }
@@ -111,63 +109,54 @@ export default function UserList() {
     try {
       const term = searchTerm.trim();
       let response;
-
-      // Determine what type of search based on the input
+      let usersList: User[] = [];
+      // Simulate a search by fetching all users and filtering client-side
+      const allUsersResp = await API.get('/user/list', { params: { count: 1000, page: 1, order: 'desc' } });
+      const allUsers: User[] = allUsersResp.data.users || [];
       if (/^\d+$/.test(term)) {
-        // If it's all digits, search by ID first, then try phone number
-        try {
-          response = await API.get(`/user/search/id/${term}`);
-        } catch (err) {
-          // If ID search fails, try phone number
-          response = await API.get(`/user/search/phonenumber/${term}`);
-        }
-        // API returns a single user object, so wrap it in an array
-        const usersList = response.data.user ? [response.data.user] : [];
-        setUsers(sortUsersById(usersList));
-        setTotalUsers(response.data.user ? 1 : 0);
+        // If it's all digits, search by ID or phone number
+        usersList = allUsers.filter(u => u.id.toString() === term || u.phone_number === term);
       } else if (term.includes('@')) {
-        // If it contains @, search by email
-        const encodedEmail = encodeURIComponent(term);
-        response = await API.get(`/user/search/email/${encodedEmail}`);
-        // API returns a single user object, so wrap it in an array
-        const usersList = response.data.user ? [response.data.user] : [];
-        setUsers(sortUsersById(usersList));
-        setTotalUsers(response.data.user ? 1 : 0);
+        usersList = allUsers.filter(u => u.email.toLowerCase() === term.toLowerCase());
       } else {
-        // Otherwise, try to search by phone number or show empty
-        try {
-          response = await API.get(`/user/search/phonenumber/${term}`);
-          const usersList = response.data.user ? [response.data.user] : [];
-          setUsers(sortUsersById(usersList));
-          setTotalUsers(response.data.user ? 1 : 0);
-        } catch (err) {
-          setUsers([]);
-          setTotalUsers(0);
-        }
+        usersList = allUsers.filter(u => u.phone_number === term);
       }
+      usersList = sortUsersById(usersList);
+      setAllSearchResults(usersList);
+      setTotalUsers(usersList.length);
+      // Slice for current page
+      const startIdx = (currentPage - 1) * rowsPerPage;
+      setUsers(usersList.slice(startIdx, startIdx + rowsPerPage));
     } catch (error) {
       console.error('Error searching users:', error);
       setUsers([]);
       setTotalUsers(0);
+      setAllSearchResults([]);
     }
   };
 
   const searchByRole = async () => {
     try {
-      const response = await API.get(`/user/search/${roleFilter.toLowerCase()}`);
-      const usersList = response.data.users || [];
-      setUsers(sortUsersById(usersList));
-      setTotalUsers(response.data.users?.length || 0);
+      // Simulate a role search by fetching all users and filtering client-side
+      const allUsersResp = await API.get('/user/list', { params: { count: 1000, page: 1, order: 'desc' } });
+      const allUsers: User[] = allUsersResp.data.users || [];
+      const usersList = sortUsersById(allUsers.filter(u => u.role.toLowerCase() === roleFilter.toLowerCase()));
+      setAllSearchResults(usersList);
+      setTotalUsers(usersList.length);
+      // Slice for current page
+      const startIdx = (currentPage - 1) * rowsPerPage;
+      setUsers(usersList.slice(startIdx, startIdx + rowsPerPage));
     } catch (error) {
       console.error('Error searching by role:', error);
       setUsers([]);
       setTotalUsers(0);
+      setAllSearchResults([]);
     }
   };
 
   const handleSearch = () => {
     setCurrentPage(1);
-    fetchUsers();
+    // fetchUsers will be triggered by useEffect
   };
 
   const handleViewProfile = (userId: number) => {
@@ -176,11 +165,25 @@ export default function UserList() {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+    // If searching, slice the search results for the new page
+    if (searchTerm.trim() && allSearchResults.length > 0) {
+      const startIdx = (page - 1) * rowsPerPage;
+      setUsers(allSearchResults.slice(startIdx, startIdx + rowsPerPage));
+    }
+    // If filtering by role
+    if (roleFilter && allSearchResults.length > 0) {
+      const startIdx = (page - 1) * rowsPerPage;
+      setUsers(allSearchResults.slice(startIdx, startIdx + rowsPerPage));
+    }
   };
 
   const handleRowsPerPageChange = (rows: number) => {
     setRowsPerPage(rows);
     setCurrentPage(1);
+    // If searching, slice the search results for the new rowsPerPage
+    if ((searchTerm.trim() || roleFilter) && allSearchResults.length > 0) {
+      setUsers(allSearchResults.slice(0, rows));
+    }
   };
 
   const handleDeleteClick = (user: User) => {

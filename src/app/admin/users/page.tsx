@@ -94,7 +94,7 @@ export default function UserList() {
       });
       const usersList = response.data.users || [];
       setUsers(usersList);
-      setTotalUsers(response.data.total || response.data.count || 0);
+      setTotalUsers(response.data.count || 0);
       setAllSearchResults([]); // Clear search results if not searching
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -141,7 +141,7 @@ export default function UserList() {
 
       usersList = sortUsersById(usersList);
       setAllSearchResults(usersList);
-      setTotalUsers(usersList.length);
+      setTotalUsers(response?.data?.count || usersList.length);
       // Slice for current page (though for single user searches, this will be the full result)
       const startIdx = (currentPage - 1) * rowsPerPage;
       setUsers(usersList.slice(startIdx, startIdx + rowsPerPage));
@@ -167,7 +167,7 @@ export default function UserList() {
       const usersList = response.data.users || [];
       const sortedUsers = sortUsersById(usersList);
       setAllSearchResults(sortedUsers);
-      setTotalUsers(sortedUsers.length);
+      setTotalUsers(response.data.count || sortedUsers.length);
       // Slice for current page
       const startIdx = (currentPage - 1) * rowsPerPage;
       setUsers(sortedUsers.slice(startIdx, startIdx + rowsPerPage));

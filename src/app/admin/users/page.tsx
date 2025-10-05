@@ -94,7 +94,7 @@ export default function UserList() {
       });
       const usersList = response.data.users || [];
       setUsers(usersList);
-      setTotalUsers(response.data.count || 0);
+      setTotalUsers(response.data.total || 0);
       setAllSearchResults([]); // Clear search results if not searching
     } catch (error) {
       console.error('Error fetching users:', error);

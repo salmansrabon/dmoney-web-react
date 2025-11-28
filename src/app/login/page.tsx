@@ -103,10 +103,14 @@ export default function Login() {
         console.log('Role:', localStorage.getItem('role'));
       }
 
-      // Navigate to profile
+      // Navigate to profile - use replace to avoid back navigation issues
       console.log('Attempting to navigate to /profile');
-      router.push('/profile');
-      console.log('router.push called');
+      
+      // Small delay to ensure cookie is set properly before navigation
+      setTimeout(() => {
+        router.replace('/profile');
+        console.log('router.replace called');
+      }, 100);
     } catch (err: any) {
       console.error('Login error:', err);
       console.error('Error response:', err.response?.data);

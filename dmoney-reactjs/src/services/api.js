@@ -24,11 +24,14 @@ API.interceptors.request.use(
 );
 
 // Response interceptor to handle 401 errors (token expiration)
+// 403 errors should show alert messages instead of logging out
 API.interceptors.response.use(
   (response) => {
     return response;
   },
   (error) => {
+    // Only auto-logout on 401 (unauthorized/token expired)
+    // 403 (forbidden) should show error message instead
     if (error.response && error.response.status === 401) {
       // Token is expired or invalid
       // Clear all authentication data

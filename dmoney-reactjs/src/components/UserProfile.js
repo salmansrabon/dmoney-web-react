@@ -118,7 +118,8 @@ const UserProfile = () => {
       setIsEditing(false);
     } catch (error) {
       console.error("Error updating user or uploading photo:", error);
-      alert("Failed to update user details or upload photo.");
+      const errorMessage = error.response?.data?.message || "Failed to update user details or upload photo.";
+      alert(errorMessage);
     }
   };
 
@@ -139,7 +140,8 @@ const UserProfile = () => {
       navigate("/admin/user-list");
     } catch (error) {
       console.error("Error deleting user:", error);
-      alert("Failed to delete user. Please try again.");
+      const errorMessage = error.response?.data?.message || "Failed to delete user. Please try again.";
+      alert(errorMessage);
       setDeleting(false);
     } finally {
       setDeleteDialogOpen(false);

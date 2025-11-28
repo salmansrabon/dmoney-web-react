@@ -182,73 +182,75 @@ export default function UserProfile() {
           </Box>
         </Box>
 
-        <Paper sx={{ p: 3 }}>
-          <Stack spacing={3}>
-            <TextField
-              fullWidth
-              label="ID"
-              value={formData.id}
-              disabled
-              InputProps={{ readOnly: true }}
-            />
-            <TextField
-              fullWidth
-              label="Name"
-              value={formData.name}
-              onChange={(e) => handleChange('name', e.target.value)}
-              disabled={!editMode}
-              required
-            />
-            <TextField
-              fullWidth
-              label="Email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => handleChange('email', e.target.value)}
-              disabled={!editMode}
-              required
-            />
-            <TextField
-              fullWidth
-              label="Phone Number"
-              value={formData.phone_number}
-              onChange={(e) => handleChange('phone_number', e.target.value)}
-              disabled={!editMode}
-              required
-            />
-            <TextField
-              fullWidth
-              label="NID"
-              value={formData.nid}
-              onChange={(e) => handleChange('nid', e.target.value)}
-              disabled={!editMode}
-              required
-            />
-            <FormControl fullWidth>
-              <InputLabel>Role</InputLabel>
-              <Select
-                value={formData.role}
-                onChange={(e) => handleChange('role', e.target.value)}
-                disabled={!editMode}
-                label="Role"
-              >
-                <MenuItem value="Admin">Admin</MenuItem>
-                <MenuItem value="Agent">Agent</MenuItem>
-                <MenuItem value="Customer">Customer</MenuItem>
-                <MenuItem value="Merchant">Merchant</MenuItem>
-              </Select>
-            </FormControl>
-            {formData.balance !== undefined && (
+        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+          <Paper sx={{ p: 3, width: '100%', maxWidth: 600 }}>
+            <Stack spacing={3}>
               <TextField
-                fullWidth
-                label="Balance"
-                value={formData.balance}
+                label="ID"
+                value={formData.id}
                 disabled
                 InputProps={{ readOnly: true }}
+                sx={{ maxWidth: 400 }}
               />
-            )}
-          </Stack>
-        </Paper>
+              <TextField
+                label="Name"
+                value={formData.name}
+                onChange={(e) => handleChange('name', e.target.value)}
+                disabled={!editMode}
+                required
+                sx={{ maxWidth: 400 }}
+              />
+              <TextField
+                label="Email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleChange('email', e.target.value)}
+                disabled={!editMode}
+                required
+                sx={{ maxWidth: 400 }}
+              />
+              <TextField
+                label="Phone Number"
+                value={formData.phone_number}
+                onChange={(e) => handleChange('phone_number', e.target.value)}
+                disabled={!editMode}
+                required
+                sx={{ maxWidth: 400 }}
+              />
+              <TextField
+                label="NID"
+                value={formData.nid}
+                onChange={(e) => handleChange('nid', e.target.value)}
+                disabled={!editMode}
+                required
+                sx={{ maxWidth: 400 }}
+              />
+              <FormControl sx={{ maxWidth: 400 }}>
+                <InputLabel>Role</InputLabel>
+                <Select
+                  value={formData.role}
+                  onChange={(e) => handleChange('role', e.target.value)}
+                  disabled={!editMode}
+                  label="Role"
+                >
+                  <MenuItem value="Admin">Admin</MenuItem>
+                  <MenuItem value="Agent">Agent</MenuItem>
+                  <MenuItem value="Customer">Customer</MenuItem>
+                  <MenuItem value="Merchant">Merchant</MenuItem>
+                </Select>
+              </FormControl>
+              {formData.balance !== undefined && (
+                <TextField
+                  label="Balance"
+                  value={formData.balance}
+                  disabled
+                  InputProps={{ readOnly: true }}
+                  sx={{ maxWidth: 400 }}
+                />
+              )}
+            </Stack>
+          </Paper>
+        </Box>
 
         <Snackbar
           open={snackbarOpen}

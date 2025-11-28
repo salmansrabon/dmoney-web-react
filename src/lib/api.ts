@@ -25,13 +25,15 @@ API.interceptors.request.use(
   }
 );
 
-// Response interceptor to handle 401/403 errors (token expiration)
+// Response interceptor to handle 401 errors (token expiration)
 API.interceptors.response.use(
   (response) => {
     return response;
   },
   (error) => {
-    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+    // Only auto-logout on 401 (unauthorized/token expired)
+    // 403 (forbidden) should show error message instead
+    if (error.response && error.response.status === 401) {
       // Token is expired or invalid
       if (typeof window !== 'undefined') {
         // Clear all authentication data from localStorage

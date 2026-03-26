@@ -2,17 +2,36 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import axios from 'axios';
 import {
   Box,
   Button,
   TextField,
   Typography,
-  Container,
   Alert,
   CircularProgress,
-  Paper,
+  Chip,
 } from '@mui/material';
+
+// ─── Shared dark-theme text-field styles ─────────────────────────────────────
+const darkField = {
+  '& .MuiOutlinedInput-root': {
+    color: '#e2e8f0',
+    bgcolor: 'rgba(255,255,255,0.04)',
+    borderRadius: '10px',
+    '& fieldset': { borderColor: 'rgba(255,255,255,0.1)' },
+    '&:hover fieldset': { borderColor: 'rgba(99,102,241,0.5)' },
+    '&.Mui-focused fieldset': { borderColor: '#6366f1', borderWidth: 2 },
+  },
+  '& .MuiInputLabel-root': { color: '#64748b' },
+  '& .MuiInputLabel-root.Mui-focused': { color: '#818cf8' },
+  '& .MuiFormHelperText-root': { color: '#475569' },
+  '& input:-webkit-autofill': {
+    WebkitBoxShadow: '0 0 0 100px rgba(15,15,26,0.95) inset',
+    WebkitTextFillColor: '#e2e8f0',
+  },
+};
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -24,7 +43,7 @@ export default function Login() {
   // OTP step
   const [otpRequired, setOtpRequired] = useState(false);
   const [otp, setOtp] = useState('');
-  const [otpInfo, setOtpInfo] = useState(''); // info message shown after OTP is sent
+  const [otpInfo, setOtpInfo] = useState('');
   const [otpLoading, setOtpLoading] = useState(false);
 
   const router = useRouter();
@@ -43,7 +62,7 @@ export default function Login() {
     } catch {
       // fall through
     }
-    return 86400; // fallback: 24 h
+    return 86400;
   };
 
   // ── Shared: fetch user profile then store & redirect ─────────────────────
@@ -64,17 +83,15 @@ export default function Login() {
       user = resp.data.user;
     }
 
-    console.log('User data received:', user);
-
     if (typeof window !== 'undefined') {
       localStorage.setItem('token', token);
       localStorage.setItem('role', user.role);
       localStorage.setItem('email', user.email);
+      localStorage.setItem('name', user.name || '');
       localStorage.setItem('userId', user.id?.toString() || '');
       localStorage.setItem('phoneNumber', user.phone_number);
       localStorage.setItem('photo', user.photo || '');
       localStorage.setItem('balance', user.balance?.toString() || '0');
-      // Set cookie max-age to match the JWT's actual expiry — not a fixed 24 h
       document.cookie = `token=${token}; path=/; max-age=${getTokenMaxAge(token)}`;
     }
 
@@ -96,19 +113,16 @@ export default function Login() {
     try {
       const loginResponse = await axios.post(`${apiUrl}/user/login`, { email, password });
 
-      // Admin: direct JWT — complete login immediately
       if (loginResponse.data.token) {
         await completeLogin(loginResponse.data.token);
         return;
       }
 
-      // Customer / Agent / Merchant: OTP required
       if (loginResponse.data.otpRequired) {
         setOtpInfo(loginResponse.data.message || 'OTP sent to your registered email address.');
         setOtpRequired(true);
       }
     } catch (err: any) {
-      console.error('Login error:', err);
       if (err.response?.status === 401 || err.response?.status === 400) {
         setError('Login failed. Please input correct email/phone number or password.');
       } else if (err.code === 'ERR_NETWORK') {
@@ -140,7 +154,6 @@ export default function Login() {
 
       await completeLogin(verifyResponse.data.token);
     } catch (err: any) {
-      console.error('OTP verification error:', err);
       setError(err.response?.data?.message || 'OTP verification failed. Please try again.');
     } finally {
       setOtpLoading(false);
@@ -156,149 +169,252 @@ export default function Login() {
   };
 
   return (
-    <Container component="main" maxWidth="xs">
+    <Box
+      sx={{
+        minHeight: '100vh',
+        bgcolor: '#0f0f1a',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        px: 2,
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Background glow blobs */}
+      <Box sx={{ position: 'absolute', top: -150, left: '5%', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
+      <Box sx={{ position: 'absolute', bottom: -100, right: '5%', width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(16,185,129,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
+
+      {/* Back to Home */}
+      <Box sx={{ position: 'absolute', top: 24, left: 24 }}>
+        <Button
+          component={Link}
+          href="/"
+          sx={{
+            color: '#64748b', textTransform: 'none', fontSize: 13, fontWeight: 600,
+            '&:hover': { color: '#818cf8' },
+          }}
+        >
+          ← Back to Home
+        </Button>
+      </Box>
+
+      {/* Card */}
       <Box
         sx={{
-          marginTop: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
+          width: '100%',
+          maxWidth: 440,
+          bgcolor: 'rgba(255,255,255,0.03)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: '24px',
+          p: { xs: 3, sm: 4.5 },
+          backdropFilter: 'blur(20px)',
+          position: 'relative',
+          zIndex: 1,
         }}
       >
-        {/* Logo */}
-        <Box sx={{ marginBottom: 4 }}>
-          <img
-            src="/logo.png"
-            alt="Logo"
-            width={100}
-            height={100}
-            style={{ display: 'block' }}
-          />
+        {/* Logo + Brand */}
+        <Box sx={{ textAlign: 'center', mb: 3.5 }}>
+          <Box
+            sx={{
+              width: 56, height: 56, borderRadius: '16px',
+              background: 'linear-gradient(135deg, #6366f1, #10b981)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontWeight: 900, fontSize: 22, color: '#fff',
+              mx: 'auto', mb: 2,
+              boxShadow: '0 8px 32px rgba(99,102,241,0.4)',
+            }}
+          >
+            D
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 0.5 }}>
+            <Typography sx={{ fontWeight: 800, fontSize: 22, color: '#f1f5f9', letterSpacing: '-0.5px' }}>
+              {otpRequired ? 'Verify Your Identity' : 'Welcome Back'}
+            </Typography>
+          </Box>
+          <Typography sx={{ color: '#64748b', fontSize: 14 }}>
+            {otpRequired
+              ? 'Enter the OTP sent to your email'
+              : 'Sign in to your dMoney account'}
+          </Typography>
         </Box>
 
-        <Paper
-          elevation={3}
-          sx={{ padding: 4, width: '100%', borderRadius: 2, textAlign: 'center' }}
-        >
-          <Typography component="h1" variant="h5" sx={{ marginBottom: 2 }}>
-            D-Money Login
-          </Typography>
+        {/* Alerts */}
+        {validationError && (
+          <Alert
+            severity="warning"
+            sx={{ mb: 2.5, bgcolor: 'rgba(245,158,11,0.1)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '10px', '& .MuiAlert-icon': { color: '#fbbf24' } }}
+          >
+            {validationError}
+          </Alert>
+        )}
+        {error && (
+          <Alert
+            severity="error"
+            sx={{ mb: 2.5, bgcolor: 'rgba(239,68,68,0.1)', color: '#f87171', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '10px', '& .MuiAlert-icon': { color: '#f87171' } }}
+          >
+            {error}
+          </Alert>
+        )}
 
-          {validationError && (
-            <Alert severity="warning" sx={{ marginBottom: 2 }}>{validationError}</Alert>
-          )}
-          {error && (
-            <Alert severity="error" sx={{ marginBottom: 2 }}>{error}</Alert>
-          )}
+        {/* ── Step 1: Credentials ─────────────────────────────────────── */}
+        {!otpRequired && (
+          <>
+            <Box component="form" onSubmit={handleLogin} noValidate>
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                label="Email or Phone Number"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter email or phone number"
+                sx={{ ...darkField, mb: 0.5 }}
+              />
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                label="Password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                sx={{ ...darkField, mb: 2 }}
+              />
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                disabled={loading}
+                sx={{
+                  mt: 1, height: 50, fontSize: 15, fontWeight: 700,
+                  textTransform: 'none', borderRadius: '12px',
+                  background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                  boxShadow: '0 0 30px rgba(99,102,241,0.4)',
+                  '&:hover': { background: 'linear-gradient(135deg, #818cf8, #6366f1)', boxShadow: '0 0 40px rgba(99,102,241,0.6)' },
+                  '&:disabled': { background: 'rgba(99,102,241,0.3)', color: 'rgba(255,255,255,0.4)' },
+                }}
+              >
+                {loading ? (
+                  <><CircularProgress size={16} sx={{ color: '#fff', mr: 1 }} />Verifying…</>
+                ) : (
+                  'Login →'
+                )}
+              </Button>
+            </Box>
 
-          {/* ── Step 1: Credentials ─────────────────────────────────────── */}
-          {!otpRequired && (
-            <>
-              <Box sx={{ mb: 2, textAlign: 'center' }}>
-                <Typography variant="body2" color="text.secondary">
-                  Don&apos;t have an account?{' '}
-                  <span
-                    onClick={() => router.push('/register')}
-                    style={{ color: '#1976d2', cursor: 'pointer', fontWeight: 500 }}
-                  >
-                    Register here
-                  </span>
-                </Typography>
-              </Box>
-              <Box component="form" onSubmit={handleLogin} noValidate>
-                <TextField
-                  margin="normal"
-                  required
-                  fullWidth
-                  label="Email or Phone Number"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter email or phone number"
-                  sx={{ marginBottom: 2 }}
-                />
-                <TextField
-                  margin="normal"
-                  required
-                  fullWidth
-                  label="Password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  sx={{ marginBottom: 2 }}
-                />
-                <Button
-                  type="submit"
-                  fullWidth
-                  variant="contained"
-                  sx={{ marginTop: 2, height: 48, fontSize: '16px', fontWeight: 'bold' }}
-                  disabled={loading}
+            {/* Divider */}
+            <Box sx={{ my: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box sx={{ flex: 1, height: '1px', bgcolor: 'rgba(255,255,255,0.06)' }} />
+              <Typography sx={{ color: '#475569', fontSize: 12 }}>OR</Typography>
+              <Box sx={{ flex: 1, height: '1px', bgcolor: 'rgba(255,255,255,0.06)' }} />
+            </Box>
+
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography sx={{ color: '#64748b', fontSize: 14 }}>
+                Don't have an account?{' '}
+                <Box
+                  component="span"
+                  onClick={() => router.push('/register')}
+                  sx={{ color: '#818cf8', cursor: 'pointer', fontWeight: 600, '&:hover': { color: '#a5b4fc', textDecoration: 'underline' } }}
                 >
-                  {loading ? (
-                    <>
-                      <CircularProgress size={16} sx={{ color: '#fff', marginRight: 1 }} />
-                      Verifying…
-                    </>
-                  ) : (
-                    'Login'
-                  )}
-                </Button>
-              </Box>
-            </>
-          )}
+                  Sign Up Free
+                </Box>
+              </Typography>
+            </Box>
+          </>
+        )}
 
-          {/* ── Step 2: OTP ─────────────────────────────────────────────── */}
-          {otpRequired && (
-            <>
-              <Alert severity="info" sx={{ mb: 2, textAlign: 'left' }}>
+        {/* ── Step 2: OTP ─────────────────────────────────────────────── */}
+        {otpRequired && (
+          <>
+            {/* OTP info banner */}
+            <Box
+              sx={{
+                mb: 3, p: 2.5, borderRadius: '12px',
+                bgcolor: 'rgba(99,102,241,0.08)',
+                border: '1px solid rgba(99,102,241,0.2)',
+                display: 'flex', gap: 1.5, alignItems: 'flex-start',
+              }}
+            >
+              <Box sx={{ mt: 0.3 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#818cf8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" />
+                </svg>
+              </Box>
+              <Typography sx={{ color: '#94a3b8', fontSize: 13.5, lineHeight: 1.7 }}>
                 {otpInfo}
-              </Alert>
-              <Box component="form" onSubmit={handleVerifyOtp} noValidate>
-                <TextField
-                  margin="normal"
-                  required
-                  fullWidth
-                  label="Enter OTP"
-                  value={otp}
-                  onChange={(e) => {
-                    // Allow only digits, max 4
-                    const val = e.target.value.replace(/\D/g, '').slice(0, 4);
-                    setOtp(val);
-                  }}
-                  inputProps={{ maxLength: 4, inputMode: 'numeric', pattern: '[0-9]*' }}
-                  placeholder="4-digit OTP"
-                  sx={{ marginBottom: 2 }}
-                  helperText="Check your registered email for the OTP. Valid for 2 minutes."
-                />
-                <Button
-                  type="submit"
-                  fullWidth
-                  variant="contained"
-                  sx={{ height: 48, fontSize: '16px', fontWeight: 'bold' }}
-                  disabled={otpLoading}
-                >
-                  {otpLoading ? (
-                    <>
-                      <CircularProgress size={16} sx={{ color: '#fff', marginRight: 1 }} />
-                      Verifying OTP…
-                    </>
-                  ) : (
-                    'Verify OTP'
-                  )}
-                </Button>
-                <Button
-                  fullWidth
-                  variant="text"
-                  sx={{ mt: 1 }}
-                  onClick={handleBack}
-                  disabled={otpLoading}
-                >
-                  ← Back to Login
-                </Button>
-              </Box>
-            </>
-          )}
-        </Paper>
+              </Typography>
+            </Box>
+
+            <Box component="form" onSubmit={handleVerifyOtp} noValidate>
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                label="Enter 4-Digit OTP"
+                value={otp}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                  setOtp(val);
+                }}
+                inputProps={{ maxLength: 4, inputMode: 'numeric', pattern: '[0-9]*' }}
+                placeholder="• • • •"
+                helperText="Check your registered email. Valid for 2 minutes."
+                sx={{
+                  ...darkField,
+                  mb: 2,
+                  '& input': { textAlign: 'center', fontSize: 28, letterSpacing: '0.5em', fontWeight: 700 },
+                }}
+              />
+
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                disabled={otpLoading}
+                sx={{
+                  height: 50, fontSize: 15, fontWeight: 700,
+                  textTransform: 'none', borderRadius: '12px',
+                  background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                  boxShadow: '0 0 30px rgba(99,102,241,0.4)',
+                  '&:hover': { background: 'linear-gradient(135deg, #818cf8, #6366f1)' },
+                  '&:disabled': { background: 'rgba(99,102,241,0.3)', color: 'rgba(255,255,255,0.4)' },
+                }}
+              >
+                {otpLoading ? (
+                  <><CircularProgress size={16} sx={{ color: '#fff', mr: 1 }} />Verifying OTP…</>
+                ) : (
+                  'Verify OTP →'
+                )}
+              </Button>
+
+              <Button
+                fullWidth
+                variant="text"
+                onClick={handleBack}
+                disabled={otpLoading}
+                sx={{
+                  mt: 1.5, textTransform: 'none', color: '#64748b', fontSize: 14,
+                  '&:hover': { color: '#818cf8', bgcolor: 'transparent' },
+                }}
+              >
+                ← Back to Login
+              </Button>
+            </Box>
+          </>
+        )}
       </Box>
-    </Container>
+
+      {/* Footer note */}
+      <Box sx={{ mt: 4, textAlign: 'center' }}>
+        <Chip
+          label="🔒 Secured with JWT + OTP Authentication"
+          size="small"
+          sx={{ bgcolor: 'rgba(255,255,255,0.04)', color: '#475569', border: '1px solid rgba(255,255,255,0.06)', fontSize: 11 }}
+        />
+      </Box>
+    </Box>
   );
 }

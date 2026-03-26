@@ -4,23 +4,33 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import API from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
-import {
-  Box,
-  Typography,
-  TextField,
-  Button,
-  Alert,
-  Paper,
-  Stack,
-  Divider,
-} from '@mui/material';
+import { Box, Typography, TextField, Button, Alert, Stack, CircularProgress, Chip } from '@mui/material';
+import SendIcon from '@mui/icons-material/Send';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+
+const COLOR = '#6366f1';
+
+const dashField = {
+  '& .MuiOutlinedInput-root': {
+    color: '#1e293b', bgcolor: '#f8fafc', borderRadius: '10px',
+    '& fieldset': { borderColor: 'rgba(0,0,0,0.15)' },
+    '&:hover fieldset': { borderColor: `${COLOR}80` },
+    '&.Mui-focused fieldset': { borderColor: COLOR, borderWidth: 2 },
+  },
+  '& .MuiInputLabel-root': { color: '#64748b' },
+  '& .MuiInputLabel-root.Mui-focused': { color: COLOR },
+  '& .MuiFormHelperText-root': { color: '#64748b' },
+};
+
+interface FieldErrors {
+  receiver: string;
+  amount: string;
+}
 
 export default function SendMoney() {
   const router = useRouter();
-  const [formData, setFormData] = useState({
-    receiver: '',
-    amount: '',
-  });
+  const [formData, setFormData] = useState({ receiver: '', amount: '' });
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({ receiver: '', amount: '' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [trnxId, setTrnxId] = useState('');
@@ -28,112 +38,143 @@ export default function SendMoney() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      router.replace('/login');
-    }
+    if (!localStorage.getItem('token')) router.replace('/login');
   }, [router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((p) => ({ ...p, [name]: value }));
+    // Clear field error on change
+    setFieldErrors((prev) => ({ ...prev, [name]: '' }));
+  };
+
+  const validate = (): boolean => {
+    const errors: FieldErrors = { receiver: '', amount: '' };
+    let valid = true;
+
+    if (!formData.receiver.trim()) {
+      errors.receiver = 'Receiver phone number is required.';
+      valid = false;
+    }
+    if (!formData.amount || formData.amount === '0') {
+      errors.amount = 'Amount is required.';
+      valid = false;
+    } else if (Number(formData.amount) <= 0) {
+      errors.amount = 'Amount must be greater than 0.';
+      valid = false;
+    }
+
+    setFieldErrors(errors);
+    return valid;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
-    setTrnxId('');
-    setCurrentBalance(null);
-    setLoading(true);
+    setError(''); setSuccess(''); setTrnxId(''); setCurrentBalance(null);
 
+    if (!validate()) return;
+
+    setLoading(true);
     try {
       const phoneNumber = localStorage.getItem('phoneNumber');
-
-      if (!phoneNumber) {
-        setError('Phone number not found. Please log in again.');
-        setLoading(false);
-        return;
-      }
-
-      const response = await API.post('/transaction/sendmoney', {
-        from_account: phoneNumber,
-        to_account: formData.receiver,
-        amount: Number(formData.amount),
+      if (!phoneNumber) { setError('Phone number not found. Please log in again.'); return; }
+      const res = await API.post('/transaction/sendmoney', {
+        from_account: phoneNumber, to_account: formData.receiver, amount: Number(formData.amount),
       });
-
-      setSuccess(response.data.message || 'Money sent successfully!');
-      setTrnxId(response.data.trnxId || '');
-      if (typeof response.data.currentBalance === 'number') {
-        setCurrentBalance(response.data.currentBalance);
-      }
+      setSuccess(res.data.message || 'Money sent successfully!');
+      setTrnxId(res.data.trnxId || '');
+      if (typeof res.data.currentBalance === 'number') setCurrentBalance(res.data.currentBalance);
       setFormData({ receiver: '', amount: '' });
+      setFieldErrors({ receiver: '', amount: '' });
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to send money');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   return (
     <DashboardLayout>
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '70vh', px: { xs: 2, sm: 3 } }}>
-        <Typography variant="h4" gutterBottom sx={{ fontSize: { xs: '1.75rem', sm: '2.125rem' } }}>
-          Send Money
-        </Typography>
+      <Box>
+        {/* ── Page Header ────────────────────────────────────────────── */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
+          <Box sx={{ width: 52, height: 52, borderRadius: '14px', bgcolor: `${COLOR}18`, border: `1px solid ${COLOR}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: COLOR, flexShrink: 0 }}>
+            <SendIcon sx={{ fontSize: 24 }} />
+          </Box>
+          <Box>
+            <Typography sx={{ fontWeight: 800, fontSize: 22, color: '#1e293b', letterSpacing: '-0.3px' }}>
+              Send Money
+            </Typography>
+            <Typography sx={{ color: '#64748b', fontSize: 14 }}>
+              Transfer funds to another customer instantly
+            </Typography>
+          </Box>
+        </Box>
 
-        <Paper sx={{ p: { xs: 2, sm: 3 }, mt: 3, maxWidth: 600, width: '100%' }}>
-          <form onSubmit={handleSubmit}>
-            <Stack spacing={2}>
-              <TextField
-                fullWidth
-                label="Receiver Phone Number"
-                name="receiver"
-                value={formData.receiver}
-                onChange={handleChange}
-                required
-                placeholder="Enter receiver's phone number"
-              />
+        {/* ── Form Card ──────────────────────────────────────────────── */}
+        <Box sx={{ maxWidth: 520 }}>
+          <Box sx={{ bgcolor: '#ffffff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '18px', p: 3.5, boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+            <Box component="form" onSubmit={handleSubmit} noValidate>
+              <Stack spacing={2.5}>
+                <TextField
+                  fullWidth
+                  required
+                  label="Receiver Phone Number"
+                  name="receiver"
+                  value={formData.receiver}
+                  onChange={handleChange}
+                  placeholder="Enter receiver's phone number"
+                  error={!!fieldErrors.receiver}
+                  helperText={fieldErrors.receiver || ''}
+                  sx={dashField}
+                />
+                <TextField
+                  fullWidth
+                  required
+                  label="Amount (BDT)"
+                  name="amount"
+                  type="number"
+                  value={formData.amount}
+                  onChange={handleChange}
+                  inputProps={{ min: 1, step: 0.01 }}
+                  placeholder="Enter amount in BDT"
+                  error={!!fieldErrors.amount}
+                  helperText={fieldErrors.amount || ''}
+                  sx={dashField}
+                />
 
-              <TextField
-                fullWidth
-                label="Amount"
-                name="amount"
-                type="number"
-                value={formData.amount}
-                onChange={handleChange}
-                required
-                inputProps={{ min: 1, step: 0.01 }}
-                placeholder="Enter amount"
-              />
+                {error && <Alert severity="error" sx={{ borderRadius: '10px' }}>{error}</Alert>}
 
-              {error && <Alert severity="error">{error}</Alert>}
+                <Button type="submit" fullWidth variant="contained" disabled={loading}
+                  sx={{ height: 50, fontSize: 15, fontWeight: 700, textTransform: 'none', borderRadius: '12px', background: `linear-gradient(135deg, ${COLOR}, #4f46e5)`, boxShadow: `0 0 24px ${COLOR}40`, '&:hover': { background: `linear-gradient(135deg, #818cf8, ${COLOR})` }, '&:disabled': { background: 'rgba(99,102,241,0.3)', color: 'rgba(255,255,255,0.4)' } }}>
+                  {loading ? <><CircularProgress size={16} sx={{ color: '#fff', mr: 1 }} />Sending…</> : 'Send Money →'}
+                </Button>
+              </Stack>
+            </Box>
+          </Box>
 
-              {success && (
-                <>
-                  <Alert severity="success">{success}</Alert>
-                  <Divider />
-                  <Box sx={{ bgcolor: 'grey.50', p: 2, borderRadius: 1, display: 'flex', gap: 4 }}>
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">Transaction ID</Typography>
-                      <Typography variant="body1" fontWeight="bold">{trnxId}</Typography>
-                    </Box>
-                    {currentBalance !== null && (
-                      <Box>
-                      <Typography variant="body2" color="text.secondary">Current Balance</Typography>
-                        <Typography variant="body1" fontWeight="bold">৳ {currentBalance.toFixed(2)}</Typography>
-                      </Box>
-                    )}
+          {/* ── Success Receipt ─────────────────────────────────────── */}
+          {success && (
+            <Box sx={{ mt: 3, bgcolor: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '16px', p: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                <CheckCircleIcon sx={{ color: '#10b981', fontSize: 22 }} />
+                <Typography sx={{ fontWeight: 700, color: '#059669', fontSize: 15 }}>{success}</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+                {trnxId && (
+                  <Box>
+                    <Typography sx={{ fontSize: 12, color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Transaction ID</Typography>
+                    <Chip label={trnxId} size="small" sx={{ mt: 0.5, bgcolor: 'rgba(99,102,241,0.15)', color: '#818cf8', fontWeight: 700, fontSize: 12 }} />
                   </Box>
-                </>
-              )}
-
-              <Button type="submit" variant="contained" disabled={loading} fullWidth>
-                {loading ? 'Sending...' : 'Send Money'}
-              </Button>
-            </Stack>
-          </form>
-        </Paper>
+                )}
+                {currentBalance !== null && (
+                  <Box>
+                    <Typography sx={{ fontSize: 12, color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Remaining Balance</Typography>
+                    <Typography sx={{ fontWeight: 800, color: '#1e293b', fontSize: 18, mt: 0.5 }}>৳ {currentBalance.toFixed(2)}</Typography>
+                  </Box>
+                )}
+              </Box>
+            </Box>
+          )}
+        </Box>
       </Box>
     </DashboardLayout>
   );

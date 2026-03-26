@@ -28,6 +28,7 @@ const LeftMenu = ({ mobileOpen, onDrawerToggle }: LeftMenuProps) => {
         Admin: [
           { name: 'User List', path: '/admin/users' },
           { name: 'Create User', path: '/admin/users/create' },
+          { name: 'Deposit (SYSTEM)', path: '/admin/deposit' },
           { name: 'Transaction List', path: '/admin/transactions' },
         ],
         Agent: [

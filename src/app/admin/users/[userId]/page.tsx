@@ -27,6 +27,7 @@ interface UserData {
   phone_number: string;
   nid: string;
   role: string;
+  status?: string;
   balance?: number;
 }
 
@@ -97,6 +98,7 @@ export default function UserProfile() {
         phone_number: formData.phone_number,
         nid: formData.nid,
         role: formData.role,
+        status: formData.status,
       });
 
       setSnackbarMessage('User updated successfully');
@@ -239,6 +241,55 @@ export default function UserProfile() {
                   <MenuItem value="Merchant">Merchant</MenuItem>
                 </Select>
               </FormControl>
+
+              {/* Account Status — Admin can change */}
+              <FormControl sx={{ maxWidth: 400 }}>
+                <InputLabel>Account Status</InputLabel>
+                <Select
+                  value={formData.status || 'pending'}
+                  onChange={(e) => handleChange('status', e.target.value)}
+                  disabled={!editMode}
+                  label="Account Status"
+                  renderValue={(value) => (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box
+                        sx={{
+                          width: 10,
+                          height: 10,
+                          borderRadius: '50%',
+                          bgcolor:
+                            value === 'active'
+                              ? 'success.main'
+                              : value === 'pending'
+                              ? 'warning.main'
+                              : 'error.main',
+                        }}
+                      />
+                      {(value as string).toUpperCase()}
+                    </Box>
+                  )}
+                >
+                  <MenuItem value="pending">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: 'warning.main' }} />
+                      Pending — awaiting admin approval
+                    </Box>
+                  </MenuItem>
+                  <MenuItem value="active">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: 'success.main' }} />
+                      Active — can perform transactions
+                    </Box>
+                  </MenuItem>
+                  <MenuItem value="suspended">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: 'error.main' }} />
+                      Suspended — blocked from transactions
+                    </Box>
+                  </MenuItem>
+                </Select>
+              </FormControl>
+
               {formData.balance !== undefined && (
                 <TextField
                   label="Balance"

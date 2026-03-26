@@ -12,6 +12,7 @@ import {
   Alert,
   Paper,
   Stack,
+  Divider,
 } from '@mui/material';
 
 export default function CashIn() {
@@ -22,6 +23,8 @@ export default function CashIn() {
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [trnxId, setTrnxId] = useState('');
+  const [currentBalance, setCurrentBalance] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -40,11 +43,13 @@ export default function CashIn() {
     e.preventDefault();
     setError('');
     setSuccess('');
+    setTrnxId('');
+    setCurrentBalance(null);
     setLoading(true);
 
     try {
       const phoneNumber = localStorage.getItem('phoneNumber');
-      
+
       if (!phoneNumber) {
         setError('Phone number not found. Please log in again.');
         setLoading(false);
@@ -58,10 +63,11 @@ export default function CashIn() {
       });
 
       setSuccess(response.data.message || 'Cash in successful!');
-      setFormData({
-        customer: '',
-        amount: '',
-      });
+      setTrnxId(response.data.trnxId || '');
+      if (typeof response.data.currentBalance === 'number') {
+        setCurrentBalance(response.data.currentBalance);
+      }
+      setFormData({ customer: '', amount: '' });
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to process cash in');
     } finally {
@@ -103,14 +109,26 @@ export default function CashIn() {
 
               {error && <Alert severity="error">{error}</Alert>}
 
-              {success && <Alert severity="success">{success}</Alert>}
+              {success && (
+                <>
+                  <Alert severity="success">{success}</Alert>
+                  <Divider />
+                  <Box sx={{ bgcolor: 'grey.50', p: 2, borderRadius: 1, display: 'flex', gap: 4 }}>
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">Transaction ID</Typography>
+                      <Typography variant="body1" fontWeight="bold">{trnxId}</Typography>
+                    </Box>
+                    {currentBalance !== null && (
+                      <Box>
+                      <Typography variant="body2" color="text.secondary">Current Balance</Typography>
+                        <Typography variant="body1" fontWeight="bold">৳ {currentBalance.toFixed(2)}</Typography>
+                      </Box>
+                    )}
+                  </Box>
+                </>
+              )}
 
-              <Button
-                type="submit"
-                variant="contained"
-                disabled={loading}
-                fullWidth
-              >
+              <Button type="submit" variant="contained" disabled={loading} fullWidth>
                 {loading ? 'Processing...' : 'Cash In'}
               </Button>
             </Stack>

@@ -14,6 +14,7 @@ import {
   Alert,
   Snackbar,
   Stack,
+  Chip,
 } from '@mui/material';
 
 interface User {
@@ -22,6 +23,7 @@ interface User {
   email?: string;
   phone_number?: string;
   role?: string;
+  status?: string;
   nid?: string;
   createdAt?: string;
   balance?: number;
@@ -149,6 +151,18 @@ export default function Profile() {
             )}
           </Box>
 
+          {/* Status Banner */}
+          {formData.status && formData.status !== 'active' && (
+            <Alert
+              severity={formData.status === 'pending' ? 'warning' : 'error'}
+              sx={{ mb: 3 }}
+            >
+              {formData.status === 'pending'
+                ? '⏳ Your account is pending admin approval. You cannot perform transactions until your account is activated.'
+                : '🚫 Your account has been suspended. Please contact admin for assistance.'}
+            </Alert>
+          )}
+
           <Stack spacing={3}>
             <TextField
               fullWidth
@@ -189,6 +203,26 @@ export default function Profile() {
               disabled
               InputProps={{ readOnly: true }}
             />
+            {/* Account Status — always read-only for self-profile */}
+            {formData.status && (
+              <Box>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                  Account Status
+                </Typography>
+                <Chip
+                  label={formData.status.toUpperCase()}
+                  color={
+                    formData.status === 'active'
+                      ? 'success'
+                      : formData.status === 'pending'
+                      ? 'warning'
+                      : 'error'
+                  }
+                  variant="filled"
+                  size="medium"
+                />
+              </Box>
+            )}
             {formData.createdAt && (
               <TextField
                 fullWidth

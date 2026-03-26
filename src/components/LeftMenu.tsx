@@ -37,6 +37,7 @@ const LeftMenu = ({ mobileOpen, onDrawerToggle }: LeftMenuProps) => {
           { name: 'Self Statement', path: '/agent/self-statement' },
         ],
         Customer: [
+          { name: 'Cash In (Bank)', path: '/customer/cash-in-bank' },
           { name: 'Send Money', path: '/customer/send-money' },
           { name: 'Cash Out', path: '/customer/cash-out' },
           { name: 'Payment', path: '/customer/payment' },

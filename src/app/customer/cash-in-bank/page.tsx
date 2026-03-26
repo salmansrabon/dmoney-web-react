@@ -209,6 +209,14 @@ export default function CashInBank() {
       const response = await API.post('/transaction/stripe/create-intent', {
         amount: amt,
       });
+
+      // Backend returns HTTP 208 (a 2xx code) for limit-exceeded — axios won't
+      // throw, so we must explicitly check whether clientSecret was returned.
+      if (!response.data.clientSecret) {
+        setError(response.data.message || 'Request failed. Please try again.');
+        return;
+      }
+
       const { clientSecret: cs, amount: serverAmt, minAmount, maxAmount } =
         response.data;
 

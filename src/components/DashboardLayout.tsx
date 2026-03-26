@@ -40,22 +40,54 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   const router = useRouter();
 
-  React.useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('token');
-      const userRole = localStorage.getItem('role');
-
-      if (!token || !userRole) {
-        localStorage.clear();
-        document.cookie = 'token=; path=/; max-age=0';
-        router.push('/login');
-        return;
-      }
-
-      setRole(userRole);
-      setIsAuthenticated(true);
+  // ── Helper: check whether the stored JWT is past its exp claim ─────────────
+  const isTokenExpired = (token: string): boolean => {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return typeof payload.exp === 'number' && payload.exp * 1000 < Date.now();
+    } catch {
+      return true;
     }
+  };
+
+  // ── Shared logout routine ─────────────────────────────────────────────────
+  const forceLogout = React.useCallback(() => {
+    localStorage.clear();
+    document.cookie = 'token=; path=/; max-age=0';
+    router.replace('/login');
   }, [router]);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const token    = localStorage.getItem('token');
+    const userRole = localStorage.getItem('role');
+
+    // 1. Missing credentials
+    if (!token || !userRole) {
+      forceLogout();
+      return;
+    }
+
+    // 2. Token already expired on mount (e.g. browser tab was left open overnight)
+    if (isTokenExpired(token)) {
+      forceLogout();
+      return;
+    }
+
+    setRole(userRole);
+    setIsAuthenticated(true);
+
+    // 3. Periodic check every 30 seconds — catches idle sessions without any API call
+    const interval = setInterval(() => {
+      const t = localStorage.getItem('token');
+      if (!t || isTokenExpired(t)) {
+        forceLogout();
+      }
+    }, 30_000);
+
+    return () => clearInterval(interval);
+  }, [forceLogout]);
 
   // Don't render dashboard content until authentication is verified
   if (!isAuthenticated) {

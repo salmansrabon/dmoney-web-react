@@ -32,6 +32,20 @@ export default function Login() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
   const secretKey = process.env.NEXT_PUBLIC_SECRET_KEY || 'ROADTOSDET';
 
+  // ── Helper: seconds remaining until JWT expires (for cookie max-age) ──────
+  const getTokenMaxAge = (token: string): number => {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      if (typeof payload.exp === 'number') {
+        const secsLeft = payload.exp - Math.floor(Date.now() / 1000);
+        return Math.max(secsLeft, 0);
+      }
+    } catch {
+      // fall through
+    }
+    return 86400; // fallback: 24 h
+  };
+
   // ── Shared: fetch user profile then store & redirect ─────────────────────
   const completeLogin = async (token: string) => {
     const isEmail = email.includes('@');
@@ -60,7 +74,8 @@ export default function Login() {
       localStorage.setItem('phoneNumber', user.phone_number);
       localStorage.setItem('photo', user.photo || '');
       localStorage.setItem('balance', user.balance?.toString() || '0');
-      document.cookie = `token=${token}; path=/; max-age=86400`;
+      // Set cookie max-age to match the JWT's actual expiry — not a fixed 24 h
+      document.cookie = `token=${token}; path=/; max-age=${getTokenMaxAge(token)}`;
     }
 
     setTimeout(() => router.replace('/profile'), 100);

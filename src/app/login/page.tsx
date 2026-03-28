@@ -280,8 +280,19 @@ export default function Login() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                sx={{ ...darkField, mb: 2 }}
+                sx={{ ...darkField, mb: 0.5 }}
               />
+
+              {/* Forgot password link */}
+              <Box sx={{ textAlign: 'right', mb: 1.5 }}>
+                <Box
+                  component="span"
+                  onClick={() => router.push('/forgot-password')}
+                  sx={{ color: '#64748b', fontSize: 13, cursor: 'pointer', '&:hover': { color: '#818cf8', textDecoration: 'underline' } }}
+                >
+                  Forgot password?
+                </Box>
+              </Box>
               <Button
                 type="submit"
                 fullWidth

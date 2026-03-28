@@ -162,7 +162,7 @@ export default function CashIn() {
                 )}
                 {currentBalance !== null && (
                   <Box>
-                    <Typography sx={{ fontSize: 12, color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Your Balance</Typography>
+                    <Typography sx={{ fontSize: 12, color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Current Balance</Typography>
                     <Typography sx={{ fontWeight: 800, color: '#1e293b', fontSize: 18, mt: 0.5 }}>৳ {currentBalance.toFixed(2)}</Typography>
                   </Box>
                 )}

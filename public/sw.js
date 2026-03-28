@@ -1,12 +1,11 @@
 // dMoney Service Worker
-const CACHE_NAME = 'dmoney-v1';
+const CACHE_NAME = 'dmoney-v2';
 
 // Assets to cache on install
 const PRECACHE_ASSETS = [
   '/',
   '/manifest.json',
   '/dmoney-favicon.ico',
-  '/logo.png',
 ];
 
 // ── Install: pre-cache critical assets ──────────────────────────────────────

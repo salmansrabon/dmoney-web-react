@@ -64,6 +64,7 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: "/dmoney-favicon.ico",
+    apple: "/dmoney-favicon.ico",
   },
   manifest: "/manifest.json",
 };

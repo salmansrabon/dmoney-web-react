@@ -13,6 +13,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TablePagination,
   Paper,
   CircularProgress,
   TextField,
@@ -38,7 +39,8 @@ interface Transaction {
 // email/token stored in localStorage — no props required.
 export default function SelfStatement() {
   const router = useRouter();
-  const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [currentBalance, setCurrentBalance] = useState<string>('0');
@@ -51,6 +53,10 @@ export default function SelfStatement() {
 
   const [fromDate, setFromDate] = useState<string>(getTodayDate());
   const [toDate, setToDate] = useState<string>(getTodayDate());
+
+  // Pagination state (MUI is 0-indexed; API is 1-indexed)
+  const [page, setPage] = useState(0);
+  const ROWS_PER_PAGE = 20;
 
   // Step 1 — resolve phone number from email stored in localStorage
   useEffect(() => {
@@ -83,17 +89,18 @@ export default function SelfStatement() {
     fetchUserPhone();
   }, [router]);
 
-  // Step 2 — fetch full transaction history once phone number is known
+  // Step 2 — fetch paginated transactions; re-runs on phoneNumber or page change
   useEffect(() => {
     if (!phoneNumber) return;
 
-    const fetchAllTransactions = async () => {
+    const fetchTransactions = async () => {
       setLoading(true);
       try {
         const response = await API.get(`/transaction/statement/${phoneNumber}`, {
-          params: { page: 1, count: 10000 },
+          params: { page: page + 1, count: ROWS_PER_PAGE }, // API is 1-indexed
         });
-        setAllTransactions(response.data.transactions || []);
+        setTransactions(response.data.transactions || []);
+        setTotalCount(response.data.total || 0);
       } catch (error) {
         console.error('Error fetching transactions:', error);
       } finally {
@@ -101,8 +108,8 @@ export default function SelfStatement() {
       }
     };
 
-    fetchAllTransactions();
-  }, [phoneNumber]);
+    fetchTransactions();
+  }, [phoneNumber, page]);
 
   // ── Date range filter ────────────────────────────────────────────────────
   const filterTransactionsByDate = (transactions: Transaction[]) => {
@@ -119,7 +126,7 @@ export default function SelfStatement() {
     });
   };
 
-  const filteredTransactions = filterTransactionsByDate(allTransactions);
+  const filteredTransactions = filterTransactionsByDate(transactions);
 
   const formatDate = (dateString: string) =>
     new Date(dateString).toLocaleString('en-GB', {
@@ -131,23 +138,9 @@ export default function SelfStatement() {
       second: '2-digit',
     });
 
-  // ── Running balance calculation (ascending order) ────────────────────────
+  // ── Running balance calculation (for current page only) ─────────────────
   const calculateRunningBalance = () => {
-    let prevBalance = 0;
-    if (fromDate) {
-      const filterStart = new Date(fromDate);
-      filterStart.setHours(0, 0, 0, 0);
-
-      [...allTransactions]
-        .reverse()
-        .filter(t => new Date(t.createdAt) < filterStart)
-        .forEach(t => {
-          if (t.credit) prevBalance += t.credit;
-          if (t.debit) prevBalance -= t.debit;
-        });
-    }
-
-    let balance = prevBalance;
+    let balance = 0;
     return [...filteredTransactions].reverse().map(t => {
       if (t.credit) balance += t.credit;
       if (t.debit) balance -= t.debit;
@@ -182,7 +175,7 @@ export default function SelfStatement() {
           }}
         >
           <Typography variant="h5" fontWeight={700}>
-            Transaction History{!loading && ` (Total: ${allTransactions.length})`}
+            Transaction History{!loading && ` (Total: ${totalCount})`}
           </Typography>
           <Box
             sx={{
@@ -207,7 +200,7 @@ export default function SelfStatement() {
                 label="From Date"
                 type="date"
                 value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
+        onChange={(e) => { setFromDate(e.target.value); setPage(0); }}
                 fullWidth
                 size="small"
                 InputLabelProps={{ shrink: true }}
@@ -218,7 +211,7 @@ export default function SelfStatement() {
                 label="To Date"
                 type="date"
                 value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
+        onChange={(e) => { setToDate(e.target.value); setPage(0); }}
                 fullWidth
                 size="small"
                 InputLabelProps={{ shrink: true }}
@@ -227,7 +220,7 @@ export default function SelfStatement() {
             <Box sx={{ flex: '0 0 auto' }}>
               <Button
                 variant="outlined"
-                onClick={() => { setFromDate(getTodayDate()); setToDate(getTodayDate()); }}
+              onClick={() => { setFromDate(getTodayDate()); setToDate(getTodayDate()); setPage(0); }}
                 sx={{ height: '40px', minWidth: '140px', textTransform: 'uppercase', fontWeight: 600 }}
               >
                 Reset to Today
@@ -235,7 +228,7 @@ export default function SelfStatement() {
             </Box>
           </Box>
           <Typography variant="body2" sx={{ mt: 2, color: 'text.secondary' }}>
-            Showing <strong>{transactionsWithBalance.length}</strong> transaction(s) from{' '}
+            Showing <strong>{transactionsWithBalance.length}</strong> of <strong>{totalCount}</strong> total transaction(s) from{' '}
             <strong>{fromDate}</strong> to <strong>{toDate}</strong>
           </Typography>
         </Paper>
@@ -311,6 +304,19 @@ export default function SelfStatement() {
                 )}
               </TableBody>
             </Table>
+            <TablePagination
+              component="div"
+              count={totalCount}
+              page={page}
+              onPageChange={(_e, newPage) => { setPage(newPage); }}
+              rowsPerPage={ROWS_PER_PAGE}
+              rowsPerPageOptions={[ROWS_PER_PAGE]}
+              sx={{
+                borderTop: '1px solid',
+                borderColor: 'divider',
+                backgroundColor: '#f5f5f5',
+              }}
+            />
           </TableContainer>
         )}
       </Box>

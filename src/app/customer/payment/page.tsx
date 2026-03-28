@@ -80,6 +80,11 @@ export default function Payment() {
       const res = await API.post('/transaction/payment', {
         from_account: phoneNumber, to_account: formData.merchant, amount: Number(formData.amount),
       });
+      // 208 is a 2xx code — Axios won't throw, so we must check it explicitly.
+      if (res.status === 208) {
+        setError(res.data.message || 'Transaction could not be completed.');
+        return;
+      }
       setSuccess(res.data.message || 'Payment successful!');
       setTrnxId(res.data.trnxId || '');
       if (typeof res.data.currentBalance === 'number') setCurrentBalance(res.data.currentBalance);

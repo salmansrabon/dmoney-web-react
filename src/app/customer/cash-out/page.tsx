@@ -80,6 +80,11 @@ export default function CashOut() {
       const res = await API.post('/transaction/withdraw', {
         from_account: phoneNumber, to_account: formData.agent, amount: Number(formData.amount),
       });
+      // 208 is a 2xx code — Axios won't throw, so we must check it explicitly.
+      if (res.status === 208) {
+        setError(res.data.message || 'Transaction could not be completed.');
+        return;
+      }
       setSuccess(res.data.message || 'Cash out successful!');
       setTrnxId(res.data.trnxId || '');
       if (typeof res.data.currentBalance === 'number') setCurrentBalance(res.data.currentBalance);

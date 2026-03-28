@@ -81,6 +81,12 @@ export default function SendMoney() {
       const res = await API.post('/transaction/sendmoney', {
         from_account: phoneNumber, to_account: formData.receiver, amount: Number(formData.amount),
       });
+      // 208 is a 2xx code — Axios won't throw, so we must check it explicitly.
+      // The API uses 208 for soft failures (e.g. insufficient balance, limit exceeded).
+      if (res.status === 208) {
+        setError(res.data.message || 'Transaction could not be completed.');
+        return;
+      }
       setSuccess(res.data.message || 'Money sent successfully!');
       setTrnxId(res.data.trnxId || '');
       if (typeof res.data.currentBalance === 'number') setCurrentBalance(res.data.currentBalance);

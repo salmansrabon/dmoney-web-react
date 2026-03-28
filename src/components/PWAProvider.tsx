@@ -93,7 +93,7 @@ export default function PWAProvider() {
     >
       {/* App icon */}
       <img
-        src="/logo.png"
+        src="/dmoney-favicon.ico"
         alt="dMoney"
         style={{ width: 44, height: 44, borderRadius: 10, flexShrink: 0, objectFit: 'cover' }}
       />

@@ -12,15 +12,10 @@
   "categories": ["finance", "education", "productivity"],
   "icons": [
     {
-      "src": "/logo.png",
-      "sizes": "any",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
       "src": "/dmoney-favicon.ico",
       "sizes": "48x48 32x32 16x16",
-      "type": "image/x-icon"
+      "type": "image/x-icon",
+      "purpose": "any maskable"
     }
   ]
 }

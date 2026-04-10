@@ -4,11 +4,43 @@ const API = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
 });
 
-// Request interceptor to add token to all requests
+// ── Helper: decode JWT payload and check exp claim ───────────────────────────
+function isTokenExpired(token: string): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return typeof payload.exp === 'number' && payload.exp * 1000 < Date.now();
+  } catch {
+    return true; // unparseable token → treat as expired
+  }
+}
+
+// ── Shared logout helper ──────────────────────────────────────────────────────
+export function clearSessionAndRedirect() {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem('token');
+  localStorage.removeItem('role');
+  localStorage.removeItem('email');
+  localStorage.removeItem('userId');
+  localStorage.removeItem('phoneNumber');
+  localStorage.removeItem('photo');
+  localStorage.removeItem('balance');
+  document.cookie = 'token=; path=/; max-age=0';
+  window.location.replace('/login');
+}
+
+// Request interceptor — proactively check token expiry BEFORE every request
 API.interceptors.request.use(
   (config) => {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('token');
+
+      // ── Proactive expiry check ─────────────────────────────────────────────
+      if (token && isTokenExpired(token)) {
+        clearSessionAndRedirect();
+        // Cancel the outgoing request — the page is being redirected anyway
+        return Promise.reject(new axios.Cancel('Session expired'));
+      }
+
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -34,23 +66,7 @@ API.interceptors.response.use(
     // Only auto-logout on 401 (unauthorized/token expired)
     // 403 (forbidden) should show error message instead
     if (error.response && error.response.status === 401) {
-      // Token is expired or invalid
-      if (typeof window !== 'undefined') {
-        // Clear all authentication data from localStorage
-        localStorage.removeItem('token');
-        localStorage.removeItem('role');
-        localStorage.removeItem('email');
-        localStorage.removeItem('userId');
-        localStorage.removeItem('phoneNumber');
-        localStorage.removeItem('photo');
-        localStorage.removeItem('balance');
-        
-        // Clear token cookie
-        document.cookie = 'token=; path=/; max-age=0';
-        
-        // Force immediate redirect without adding to history
-        window.location.replace('/login');
-      }
+      clearSessionAndRedirect();
     }
     return Promise.reject(error);
   }

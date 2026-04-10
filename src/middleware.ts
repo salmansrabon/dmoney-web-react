@@ -6,7 +6,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Public routes that don't require authentication
-  const publicRoutes = ['/login', '/'];
+  const publicRoutes = ['/login', '/register', '/', '/forgot-password', '/reset-password'];
 
   // If trying to access a protected route without a token
   if (!token && !publicRoutes.includes(pathname)) {
@@ -29,8 +29,9 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - PWA files (sw.js, manifest.json, workbox-*)
      * - Static files (images, fonts, etc.)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|woff|woff2|ttf|eot)).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|sw\\.js|manifest\\.json|workbox-.*|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|woff|woff2|ttf|eot)).*)',
   ],
 };

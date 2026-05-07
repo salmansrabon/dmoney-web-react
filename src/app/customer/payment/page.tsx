@@ -34,6 +34,8 @@ export default function Payment() {
   const [success, setSuccess] = useState('');
   const [trnxId, setTrnxId] = useState('');
   const [currentBalance, setCurrentBalance] = useState<number | null>(null);
+  const [paidAmount, setPaidAmount] = useState<number | null>(null);
+  const [serviceFee, setServiceFee] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -70,6 +72,7 @@ export default function Payment() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(''); setSuccess(''); setTrnxId(''); setCurrentBalance(null);
+    setPaidAmount(null); setServiceFee(null);
 
     if (!validate()) return;
 
@@ -88,6 +91,8 @@ export default function Payment() {
       setSuccess(res.data.message || 'Payment successful!');
       setTrnxId(res.data.trnxId || '');
       if (typeof res.data.currentBalance === 'number') setCurrentBalance(res.data.currentBalance);
+      setPaidAmount(Number(formData.amount));
+      if (typeof res.data.fee === 'number') setServiceFee(res.data.fee);
       setFormData({ merchant: '', amount: '' });
       setFieldErrors({ merchant: '', amount: '' });
     } catch (err: any) {
@@ -164,6 +169,18 @@ export default function Payment() {
                   <Box>
                     <Typography sx={{ fontSize: 12, color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Transaction ID</Typography>
                     <Chip label={trnxId} size="small" sx={{ mt: 0.5, bgcolor: 'rgba(16,185,129,0.15)', color: '#34d399', fontWeight: 700, fontSize: 12 }} />
+                  </Box>
+                )}
+                {paidAmount !== null && (
+                  <Box>
+                    <Typography sx={{ fontSize: 12, color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Amount</Typography>
+                    <Typography sx={{ fontWeight: 800, color: '#1e293b', fontSize: 18, mt: 0.5 }}>৳ {paidAmount.toFixed(2)}</Typography>
+                  </Box>
+                )}
+                {serviceFee !== null && (
+                  <Box>
+                    <Typography sx={{ fontSize: 12, color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Service Fee</Typography>
+                    <Typography sx={{ fontWeight: 800, color: '#1e293b', fontSize: 18, mt: 0.5 }}>৳ {serviceFee.toFixed(2)}</Typography>
                   </Box>
                 )}
                 {currentBalance !== null && (

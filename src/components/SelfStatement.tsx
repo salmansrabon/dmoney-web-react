@@ -139,13 +139,20 @@ export default function SelfStatement() {
     });
 
   // ── Running balance calculation (for current page only) ─────────────────
+  // API returns the page in DESC order (most recent first). On page 0, the
+  // balance AFTER the most recent transaction equals `currentBalance`. We walk
+  // the full unfiltered page DESC, recording each tx's "balance after" value,
+  // then apply the date filter and reverse to ascending order (oldest first).
   const calculateRunningBalance = () => {
-    let balance = 0;
-    return [...filteredTransactions].reverse().map(t => {
-      if (t.credit) balance += t.credit;
-      if (t.debit) balance -= t.debit;
-      return { ...t, runningBalance: balance };
-    });
+    let balance = parseFloat(currentBalance) || 0;
+    const balanceById = new Map<number, number>();
+    for (const t of transactions) {
+      balanceById.set(t.id, balance);
+      balance -= ((t.credit || 0) - (t.debit || 0));
+    }
+    return [...filteredTransactions]
+      .reverse()
+      .map(t => ({ ...t, runningBalance: balanceById.get(t.id) ?? 0 }));
   };
 
   const transactionsWithBalance = calculateRunningBalance();

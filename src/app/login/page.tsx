@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import axios from 'axios';
 import {
@@ -33,7 +33,7 @@ const darkField = {
   },
 };
 
-export default function Login() {
+function LoginContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -47,6 +47,8 @@ export default function Login() {
   const [otpLoading, setOtpLoading] = useState(false);
 
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const envParam = searchParams.get('env');
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
   const secretKey = process.env.NEXT_PUBLIC_SECRET_KEY || 'ROADTOSDET';
@@ -147,7 +149,10 @@ export default function Login() {
 
     setOtpLoading(true);
     try {
-      const verifyResponse = await axios.post(`${apiUrl}/user/verify-otp`, {
+      const verifyUrl = envParam
+        ? `${apiUrl}/user/verify-otp?env=${envParam}`
+        : `${apiUrl}/user/verify-otp`;
+      const verifyResponse = await axios.post(verifyUrl, {
         identifier: email,
         otp: otp,
       });
@@ -427,5 +432,13 @@ export default function Login() {
         />
       </Box>
     </Box>
+  );
+}
+
+export default function Login() {
+  return (
+    <React.Suspense fallback={null}>
+      <LoginContent />
+    </React.Suspense>
   );
 }

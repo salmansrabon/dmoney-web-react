@@ -7,6 +7,97 @@
 
 ---
 
+## Run the Frontend with Docker
+
+Use Docker to build and run the web app. You do not install Node.js on your computer. The app runs at <http://localhost:3000>.
+
+### Before you start
+
+1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/). Start it.
+2. Start the backend (`dmoney-transaction-api`) first. See the README of that repository. The backend must listen on <http://localhost:5000>.
+3. Make sure that port `3000` is free. If `npm run dev` runs, stop it.
+
+### First-time setup
+
+1. Clone the repository and go into the project folder.
+
+   ```bash
+   git clone https://github.com/salmansrabon/dmoney-web-react.git
+   cd dmoney-web-react
+   ```
+
+2. Build the image and start the container.
+
+   ```bash
+   docker compose up -d --build
+   ```
+
+   The first run downloads the Node.js image and installs the packages. It then builds the app. This can take several minutes.
+
+3. Check the container.
+
+   ```bash
+   docker compose ps
+   ```
+
+   Wait until `dmoney-web` shows `healthy`.
+
+4. Open <http://localhost:3000/login>. Log in with a default account of the backend, for example `admin@dmoney.com` with password `1234`.
+
+### Daily commands
+
+Run all commands in the project folder (the folder that contains `docker-compose.yml`).
+
+| Task | Command | What it does |
+|---|---|---|
+| Build | `docker compose build` | Builds the image. It does not start anything. |
+| Up | `docker compose up -d` | Creates the container and starts it in the background. |
+| Build and up | `docker compose up -d --build` | Builds the image, then does `up`. |
+| Stop | `docker compose stop` | Stops the container. It keeps the container. |
+| Start | `docker compose start` | Starts the stopped container. It is fast. It does not build anything. |
+| Down | `docker compose down` | Stops and removes the container. |
+| Status | `docker compose ps -a` | Shows the state of the container. |
+| Logs | `docker compose logs -f dmoney-web` | Shows the app logs. Press `Ctrl+C` to stop the log view. |
+
+The web app keeps no data, so `down` does not delete anything that you need.
+
+### Change the code or the settings
+
+The code and the settings are copied into the image when you build it. After you change the code, you must build the image again:
+
+```bash
+docker compose up -d --build
+```
+
+The values `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SECRET_KEY` and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` are fixed at build time. The browser uses them. To change them, set these variables, then build the image again:
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `DOCKER_API_URL` | `http://localhost:5000` | Backend URL. Your browser must reach this URL. |
+| `DOCKER_PARTNER_KEY` | `ROADTOSDET` | Must be the same as `PARTNER_KEY` of the backend. |
+| `DOCKER_STRIPE_KEY` | empty (uses `.env.example`) | Stripe publishable key. |
+
+Example (Git Bash or macOS/Linux):
+
+```bash
+DOCKER_API_URL=http://localhost:5000 docker compose up -d --build
+```
+
+> **NOTE**
+> The build ignores your `.env`, `.env.development` and `.env.production` files. Only `.env.example` is used. This stops the Docker build from using a production URL by mistake.
+
+### Troubleshooting
+
+| Problem | Cause | Solution |
+|---|---|---|
+| `Cannot connect to the Docker daemon` or a pipe error | Docker Desktop is not running. | Start Docker Desktop. Run the command again. |
+| `port is already allocated` | Another program uses port `3000`, for example `npm run dev`. | Stop that program. Or change the left number in `ports` in `docker-compose.yml`, for example `"3001:3000"`. |
+| Login fails or the page shows a network error | The backend is not running, or `DOCKER_API_URL` is wrong. | Start the backend. Open <http://localhost:5000/api-docs/user> to test it. Build the image again if you changed `DOCKER_API_URL`. |
+| The app still uses an old URL or key | The build kept an old value. | Run `docker compose up -d --build`. |
+| The build seems stuck | Docker is downloading images or packages. | Run `docker compose --progress=plain up -d --build` to see each step. |
+
+---
+
 ## Table of Contents
 
 1. [Project Overview](#1-project-overview)

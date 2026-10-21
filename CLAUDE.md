@@ -23,6 +23,16 @@ npm run prod    # build + start, PORT=3006
 
 There is no lint script, no test script, and no ESLint config in this project currently — don't assume `npm run lint` works.
 
+### Run with Docker (http://localhost:3000)
+
+```bash
+docker compose up -d --build   # build image + start container dmoney-web on port 3000
+docker compose stop / start    # pause / resume (no rebuild)
+docker compose down            # remove the container (stateless: no volumes)
+```
+
+`NEXT_PUBLIC_*` values are baked into the bundle at **build** time and used by the browser, so the API URL must be reachable from the host. Defaults: API `http://localhost:5000` (the `dmoney-transaction-api` compose stack — start it first), partner key `ROADTOSDET`. Override with `DOCKER_API_URL`, `DOCKER_PARTNER_KEY`, `DOCKER_STRIPE_KEY` and rebuild. The `DOCKER_*` names are deliberate: Compose auto-reads `.env`, which may point at production. `.dockerignore` excludes every real `.env*` file; the image build uses the committed `.env.example`. The local `npm run dev` server also uses port 3000 — stop it before starting the container.
+
 Environment files: `.env` (base/example values, committed), `.env.development` / `.env.production` (gitignored, real keys) are auto-loaded by Next.js per `NODE_ENV`. Key vars: `NEXT_PUBLIC_API_URL` (backend base URL), `NEXT_PUBLIC_SECRET_KEY` (sent as `X-AUTH-SECRET-KEY` header, must match backend's `PARTNER_KEY`), `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`.
 
 ## Architecture

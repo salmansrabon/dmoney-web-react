@@ -1,0 +1,25 @@
+node_modules
+.next
+npm-debug.log*
+
+# Real env files can point at production. Only the committed example is used.
+.env*
+!.env.example
+
+# Legacy CRA app and non-app folders
+dmoney-reactjs
+graphify-out
+api_doc
+
+.git
+.gitignore
+.gitattributes
+.vscode
+.claude
+.serena
+.artifacts
+.mcp.json
+
+Dockerfile
+docker-compose.yml
+.dockerignore

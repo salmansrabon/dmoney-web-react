@@ -1,0 +1,21 @@
+services:
+  dmoney-web:
+    build:
+      context: .
+      args:
+        # NEXT_PUBLIC_* values are baked in at build time and used by the BROWSER,
+        # so the API URL must be reachable from your computer, not from inside Docker.
+        # DOCKER_* names are used on purpose: Compose auto-reads .env, which can point at production.
+        NEXT_PUBLIC_API_URL: ${DOCKER_API_URL:-http://localhost:5000}
+        NEXT_PUBLIC_SECRET_KEY: ${DOCKER_PARTNER_KEY:-ROADTOSDET}
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${DOCKER_STRIPE_KEY:-}
+    container_name: dmoney-web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
